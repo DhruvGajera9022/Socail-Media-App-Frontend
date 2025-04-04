@@ -64,6 +64,28 @@ const Login = () => {
     }
   };
 
+  const googleAuth = async () => {
+    try {
+      window.location.href = `${API_BASE_URL}/auth/google`;
+      const resData = response.data;
+
+      if (resData.status) {
+        const { accessToken, refreshToken, id } = resData.data;
+
+        // Store tokens in localStorage
+        localStorage.setItem("accessToken", accessToken);
+        localStorage.setItem("refreshToken", refreshToken);
+
+        navigate("/");
+      } else {
+        setErrorMessage(resData.message || "Login failed!");
+      }
+    } catch (error) {
+      console.error("Google Auth Error:", error.message);
+      setErrorMessage(error.response?.data?.message || "Something went wrong!");
+    }
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-r bg-gray-100">
       <div className="w-full max-w-md space-y-6 rounded-xl bg-white p-6 shadow-lg">
@@ -122,7 +144,10 @@ const Login = () => {
         </div>
 
         {/* Google Login */}
-        <button className="w-full flex items-center justify-center space-x-2 rounded-lg border px-4 py-2 text-gray-700 hover:bg-gray-100 transition">
+        <button
+          className="w-full flex items-center justify-center space-x-2 rounded-lg border px-4 py-2 text-gray-700 hover:bg-gray-100 transition"
+          onClick={googleAuth}
+        >
           <img
             src="https://www.svgrepo.com/show/355037/google.svg"
             alt="Google Logo"

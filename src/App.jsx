@@ -6,6 +6,7 @@ import TwoFA from "./pages/TwoFA";
 import Home from "./pages/Home";
 import CreatePost from "./pages/CreatePost";
 import Profile from "./pages/Profile";
+import AuthCallback from "./components/AuthCallback";
 
 const App = () => {
   return (
@@ -13,6 +14,7 @@ const App = () => {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/verify-2fa/:id" element={<TwoFA />} />
+      <Route path="/auth/callback" element={<AuthCallback />} />
 
       <Route path="/" element={<Home />} />
       <Route path="/create-post" element={<CreatePost />} />
