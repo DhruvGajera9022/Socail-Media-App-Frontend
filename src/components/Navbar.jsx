@@ -17,11 +17,10 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
-const Navbar = ( ) => {
+const Navbar = ({ isDarkMode, toggleDarkMode }) => {
   const navigate = useNavigate();
   const activeTab = location.pathname;
   const [expanded, setExpanded] = useState(true);
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
 
   // Mock navigation function (replace with your router's navigation)
@@ -38,11 +37,6 @@ const Navbar = ( ) => {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
-
-  // Toggle dark mode
-  const toggleDarkMode = () => {
-    setIsDarkMode(!isDarkMode);
-  };
 
   // Toggle sidebar expansion
   const toggleSidebar = () => {

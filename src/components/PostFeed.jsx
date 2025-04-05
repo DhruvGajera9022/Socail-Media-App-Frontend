@@ -14,31 +14,24 @@ import { motion, AnimatePresence } from "framer-motion";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Main Post Feed Component
-const PostFeed = () => {
+const PostFeed = ({ isDarkMode }) => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Fetch posts from API
     const fetchPosts = async () => {
       try {
         setLoading(true);
         const response = await fetch(`${API_BASE_URL}/post`);
-
         if (!response.ok) {
           throw new Error("Failed to fetch posts");
         }
-
         const data = await response.json();
-        console.log(data.data);
-
-        // Remove duplicate posts by filtering based on post ID
         const uniquePosts = removeDuplicatePosts(data.data);
         setPosts(uniquePosts);
       } catch (err) {
         setError(err.message);
-        console.error("Error fetching posts:", err);
       } finally {
         setLoading(false);
       }
@@ -47,22 +40,18 @@ const PostFeed = () => {
     fetchPosts();
   }, []);
 
-  // Function to remove duplicate posts based on ID
   const removeDuplicatePosts = (postsArray) => {
-    const uniquePostMap = new Map();
-
-    // Use Map to keep only the latest version of each post by ID
-    postsArray.forEach((post) => {
-      uniquePostMap.set(post.id, post);
-    });
-
-    // Convert Map values back to array
-    return Array.from(uniquePostMap.values());
+    const map = new Map();
+    postsArray.forEach((post) => map.set(post.id, post));
+    return Array.from(map.values());
   };
 
+  const themeClasses = isDarkMode
+    ? "bg-gray-900 text-white border-gray-700"
+    : "bg-white text-gray-800 border-gray-200";
+
   return (
-    <div className="max-w-2xl mx-auto pt-6 pb-20">
-      {/* Display loading state */}
+    <div className={`max-w-2xl mx-auto pt-6 pb-20 ${themeClasses}`}>
       {loading && (
         <div className="flex justify-center items-center py-10">
           <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
@@ -70,7 +59,6 @@ const PostFeed = () => {
         </div>
       )}
 
-      {/* Display error message */}
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
           <strong className="font-bold">Error:</strong>
@@ -78,7 +66,6 @@ const PostFeed = () => {
         </div>
       )}
 
-      {/* Display posts */}
       {!loading &&
         !error &&
         (posts.length === 0 ? (
@@ -88,7 +75,7 @@ const PostFeed = () => {
         ) : (
           <div className="space-y-6">
             {posts.map((post) => (
-              <Post key={post.id} post={post} />
+              <Post key={post.id} post={post} isDarkMode={isDarkMode} />
             ))}
           </div>
         ))}
@@ -97,7 +84,7 @@ const PostFeed = () => {
 };
 
 // Individual Post Component
-const Post = ({ post }) => {
+const Post = ({ post, isDarkMode }) => {
   const [liked, setLiked] = useState(false);
   const [saved, setSaved] = useState(false);
   const [likeCount, setLikeCount] = useState(post.likes_count || 0);
@@ -106,26 +93,41 @@ const Post = ({ post }) => {
 
   const accessToken = localStorage.getItem("accessToken");
 
-  // Handle multiple images - if post.media_urls is available use that, otherwise wrap the single media_url in an array
-  const mediaUrls = post.media_url || (post.media_url ? [post.media_url] : []);
+  const mediaUrls = Array.isArray(post.media_url)
+    ? post.media_url
+    : post.media_url
+    ? [post.media_url]
+    : [];
   const hasMultipleImages = mediaUrls.length > 1;
 
-  // Check if user already liked this post
+  const postTheme = isDarkMode
+    ? {
+        container: "bg-gray-800 text-white border-gray-700",
+        text: "text-white",
+        secondaryText: "text-gray-400",
+        border: "border-gray-700",
+        hover: "hover:bg-gray-700",
+        icon: "text-gray-300",
+      }
+    : {
+        container: "bg-white text-gray-800 border-gray-200",
+        text: "text-gray-800",
+        secondaryText: "text-gray-500",
+        border: "border-gray-100",
+        hover: "hover:bg-gray-100",
+        icon: "text-gray-600",
+      };
+
   useEffect(() => {
     const checkLikeStatus = async () => {
       if (!accessToken) return;
-
       try {
         const response = await fetch(
           `${API_BASE_URL}/post/${post.id}/like/status`,
           {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
+            headers: { Authorization: `Bearer ${accessToken}` },
           }
         );
-
         if (response.ok) {
           const data = await response.json();
           setLiked(data.liked || false);
@@ -134,23 +136,16 @@ const Post = ({ post }) => {
         console.error("Error checking like status:", err);
       }
     };
-
     checkLikeStatus();
   }, [post.id, accessToken]);
 
   const toggleLike = async () => {
-    if (!accessToken) {
-      console.error("No access token available");
-      return;
-    }
-
+    if (!accessToken) return;
     try {
-      // Optimistically update UI
       const newLikeCount = liked ? likeCount - 1 : likeCount + 1;
       setLikeCount(newLikeCount);
       setLiked(!liked);
 
-      // Send request to API to update like status
       const response = await fetch(`${API_BASE_URL}/post/${post.id}/like`, {
         method: "PATCH",
         headers: {
@@ -160,7 +155,6 @@ const Post = ({ post }) => {
       });
 
       if (!response.ok) {
-        // Revert optimistic update if request fails
         setLikeCount(likeCount);
         setLiked(liked);
         throw new Error("Failed to update like status");
@@ -171,16 +165,10 @@ const Post = ({ post }) => {
   };
 
   const toggleSave = async () => {
-    if (!accessToken) {
-      console.error("No access token available");
-      return;
-    }
-
+    if (!accessToken) return;
     try {
-      // Optimistically update UI
       setSaved(!saved);
 
-      // Send request to API to update bookmark status
       const response = await fetch(`${API_BASE_URL}/post/${post.id}/bookmark`, {
         method: "POST",
         headers: {
@@ -191,7 +179,6 @@ const Post = ({ post }) => {
       });
 
       if (!response.ok) {
-        // Revert optimistic update if request fails
         setSaved(saved);
         throw new Error("Failed to update bookmark status");
       }
@@ -200,16 +187,15 @@ const Post = ({ post }) => {
     }
   };
 
-  // Navigation functions for image carousel
   const nextImage = () => {
     setSlideDirection("right");
-    setCurrentImageIndex((prevIndex) => (prevIndex + 1) % mediaUrls.length);
+    setCurrentImageIndex((prev) => (prev + 1) % mediaUrls.length);
   };
 
   const prevImage = () => {
     setSlideDirection("left");
     setCurrentImageIndex(
-      (prevIndex) => (prevIndex - 1 + mediaUrls.length) % mediaUrls.length
+      (prev) => (prev - 1 + mediaUrls.length) % mediaUrls.length
     );
   };
 
@@ -218,7 +204,6 @@ const Post = ({ post }) => {
     setCurrentImageIndex(index);
   };
 
-  // Format date to be more readable
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("en-US", {
@@ -230,18 +215,20 @@ const Post = ({ post }) => {
     });
   };
 
-  // Return early if no access token - moved here to avoid functional issues
   if (!accessToken) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-4 text-center">
+      <div
+        className={`${postTheme.container} rounded-lg shadow-md p-4 text-center`}
+      >
         Please log in to view posts
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
-      {/* Post Header */}
+    <div
+      className={`${postTheme.container} rounded-lg shadow-md overflow-hidden border ${postTheme.border}`}
+    >
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center">
           <img
@@ -251,45 +238,45 @@ const Post = ({ post }) => {
           />
           <div className="ml-3">
             <div className="flex items-center">
-              <h3 className="font-medium text-gray-800">
+              <h3 className={`font-medium ${postTheme.text}`}>
                 {post.user?.firstName || "User"}
               </h3>
-              <span className="text-gray-500 text-sm ml-2">
+              <span className={`${postTheme.secondaryText} text-sm ml-2`}>
                 @{post.user?.lastName || "user"}
               </span>
               {post.pinned && (
-                <div className="ml-2 flex items-center text-blue-600 text-xs">
+                <div className="ml-2 flex items-center text-blue-400 text-xs">
                   <Pin size={12} className="mr-1" />
                   <span>Pinned</span>
                 </div>
               )}
             </div>
-            <p className="text-xs text-gray-500">
+            <p className={`text-xs ${postTheme.secondaryText}`}>
               {formatDate(post.created_at)}
             </p>
           </div>
         </div>
-        <button className="text-gray-500 hover:text-gray-700">
+        <button className={postTheme.icon}>
           <MoreHorizontal size={20} />
         </button>
       </div>
 
-      {/* Post Title (if available) */}
       {post.title && (
         <div className="px-4 pb-2">
-          <h2 className="font-bold text-lg text-gray-900">{post.title}</h2>
+          <h2 className={`font-bold text-lg ${postTheme.text}`}>
+            {post.title}
+          </h2>
         </div>
       )}
 
-      {/* Post Content */}
       <div className="px-4 pb-4">
-        <p className="text-gray-800 whitespace-pre-line">{post.content}</p>
+        <p className={`${postTheme.text} whitespace-pre-line`}>
+          {post.content}
+        </p>
       </div>
 
-      {/* Post Media Carousel (if available) */}
       {mediaUrls.length > 0 && (
-        <div className="relative w-full bg-gray-100">
-          {/* Image Container */}
+        <div className="relative w-full bg-gray-100 dark:bg-gray-700">
           <div className="overflow-hidden relative h-64">
             <AnimatePresence initial={false} mode="wait">
               <motion.img
@@ -301,10 +288,7 @@ const Post = ({ post }) => {
                   opacity: 0,
                   x: slideDirection === "right" ? 100 : -100,
                 }}
-                animate={{
-                  opacity: 1,
-                  x: 0,
-                }}
+                animate={{ opacity: 1, x: 0 }}
                 exit={{
                   opacity: 0,
                   x: slideDirection === "right" ? -100 : 100,
@@ -313,7 +297,6 @@ const Post = ({ post }) => {
               />
             </AnimatePresence>
 
-            {/* Navigation Arrows (only if multiple images) */}
             {hasMultipleImages && (
               <>
                 <button
@@ -332,7 +315,6 @@ const Post = ({ post }) => {
             )}
           </div>
 
-          {/* Indicators (dots) for multiple images */}
           {hasMultipleImages && (
             <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1">
               {mediaUrls.map((_, index) => (
@@ -352,8 +334,9 @@ const Post = ({ post }) => {
         </div>
       )}
 
-      {/* Post Stats */}
-      <div className="px-4 py-2 border-t border-gray-100 text-sm text-gray-500 flex items-center">
+      <div
+        className={`px-4 py-2 ${postTheme.border} text-sm ${postTheme.secondaryText} flex items-center`}
+      >
         <div className="flex items-center mr-4">
           <Heart size={16} className="mr-1" />
           <span>{likeCount} likes</span>
@@ -367,24 +350,29 @@ const Post = ({ post }) => {
         </div>
       </div>
 
-      {/* Post Actions */}
-      <div className="px-4 py-2 border-t border-gray-100 flex justify-between">
+      <div className={`px-4 py-2 ${postTheme.border} flex justify-between`}>
         <button
           onClick={toggleLike}
           className={`flex items-center justify-center px-4 py-2 rounded-md transition-colors ${
-            liked ? "text-red-500 bg-red-50" : "text-gray-600 hover:bg-gray-100"
+            liked
+              ? "text-red-500 bg-red-100 dark:bg-red-900"
+              : `${postTheme.icon} ${postTheme.hover}`
           }`}
         >
           <Heart size={18} className={liked ? "fill-current" : ""} />
           <span className="ml-2">Like</span>
         </button>
 
-        <button className="flex items-center justify-center px-4 py-2 text-gray-600 rounded-md hover:bg-gray-100 transition-colors">
+        <button
+          className={`flex items-center justify-center px-4 py-2 rounded-md transition-colors ${postTheme.icon} ${postTheme.hover}`}
+        >
           <MessageCircle size={18} />
           <span className="ml-2">Comment</span>
         </button>
 
-        <button className="flex items-center justify-center px-4 py-2 text-gray-600 rounded-md hover:bg-gray-100 transition-colors">
+        <button
+          className={`flex items-center justify-center px-4 py-2 rounded-md transition-colors ${postTheme.icon} ${postTheme.hover}`}
+        >
           <Share2 size={18} />
           <span className="ml-2">Share</span>
         </button>
@@ -393,8 +381,8 @@ const Post = ({ post }) => {
           onClick={toggleSave}
           className={`flex items-center justify-center px-4 py-2 rounded-md transition-colors ${
             saved
-              ? "text-blue-500 bg-blue-50"
-              : "text-gray-600 hover:bg-gray-100"
+              ? "text-blue-500 bg-blue-100 dark:bg-blue-900"
+              : `${postTheme.icon} ${postTheme.hover}`
           }`}
         >
           <Bookmark size={18} className={saved ? "fill-current" : ""} />
@@ -402,9 +390,10 @@ const Post = ({ post }) => {
         </button>
       </div>
 
-      {/* Post updated indicator */}
       {post.updated_at !== post.created_at && (
-        <div className="px-4 py-1 text-xs text-gray-500 border-t border-gray-100">
+        <div
+          className={`px-4 py-1 text-xs ${postTheme.secondaryText} ${postTheme.border}`}
+        >
           Edited {formatDate(post.updated_at)}
         </div>
       )}
