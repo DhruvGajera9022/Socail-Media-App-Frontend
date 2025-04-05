@@ -7,6 +7,7 @@ import Home from "./pages/Home";
 import CreatePost from "./pages/CreatePost";
 import Profile from "./pages/Profile";
 import AuthCallback from "./components/AuthCallback";
+import Search from "./pages/Search";
 
 const App = () => {
   return (
@@ -19,6 +20,7 @@ const App = () => {
       <Route path="/" element={<Home />} />
       <Route path="/create-post" element={<CreatePost />} />
       <Route path="/profile" element={<Profile />} />
+      <Route path="/search" element={<Search />} />
     </Routes>
   );
 };
