@@ -17,7 +17,7 @@ const Search = ({ isDarkMode }) => {
       } else {
         setSearchResults([]);
       }
-    }, 500); // wait 500ms after typing stops
+    }, 500);
 
     return () => clearTimeout(delayDebounce);
   }, [searchQuery]);
@@ -43,13 +43,47 @@ const Search = ({ isDarkMode }) => {
       if (!response.ok) throw new Error("Failed to fetch search results");
 
       const data = await response.json();
-      console.log(data.data);
       setSearchResults(data.data.users || []);
     } catch (err) {
       setError(err.message);
     } finally {
       setIsSearching(false);
     }
+  };
+
+  const handleFollow = async (userId) => {
+    const accessToken = localStorage.getItem("accessToken");
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/profile/follow/${userId}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (!response.ok) throw new Error("Failed to send follow request");
+
+      setSearchResults((prevResults) =>
+        prevResults.map((user) =>
+          user.id === userId
+            ? { ...user, isFollowing: true, followRequestSent: true }
+            : user
+        )
+      );
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  // Optional: Highlight matched letters in user names
+  const highlightMatch = (text, query) => {
+    const regex = new RegExp(`(${query})`, "gi");
+    return text.replace(
+      regex,
+      `<mark class="bg-yellow-300 dark:bg-yellow-600">$1</mark>`
+    );
   };
 
   return (
@@ -68,7 +102,7 @@ const Search = ({ isDarkMode }) => {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search for content..."
+            placeholder="Search for users..."
             className={`flex-1 px-4 py-3 rounded-lg border transition-all focus:outline-none focus:ring-2 
               ${
                 isDarkMode
@@ -85,6 +119,12 @@ const Search = ({ isDarkMode }) => {
           </button>
         </div>
 
+        {isSearching && (
+          <div className="text-center text-blue-500 dark:text-blue-300 py-6 animate-pulse">
+            Searching for users...
+          </div>
+        )}
+
         {error && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4 dark:bg-red-900 dark:text-red-200 dark:border-red-700">
             {error}
@@ -97,9 +137,9 @@ const Search = ({ isDarkMode }) => {
               Results ({searchResults.length})
             </h2>
             <div className="space-y-4">
-              {searchResults.map((result) => (
+              {searchResults.map((user) => (
                 <div
-                  key={result.id}
+                  key={user.id}
                   className={`p-5 rounded-lg shadow transition-all border hover:shadow-md 
                     ${
                       isDarkMode
@@ -107,19 +147,55 @@ const Search = ({ isDarkMode }) => {
                         : "bg-white border-gray-200 hover:bg-gray-50"
                     }`}
                 >
-                  <h3 className="text-lg font-semibold text-blue-600 dark:text-blue-400">
-                    {result.title}
-                  </h3>
-                  <p className="text-sm mt-1 text-gray-500 dark:text-gray-400">
-                    Category: {result.category}
-                  </p>
+                  <div className="flex items-center gap-4">
+                    <img
+                      src={user.profile_picture || "/default-avatar.png"}
+                      alt={`${user.firstName} ${user.lastName}`}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                    <div className="flex-1">
+                      <h3
+                        className="text-lg font-semibold text-blue-600 dark:text-blue-400"
+                        dangerouslySetInnerHTML={{
+                          __html: highlightMatch(
+                            `${user.firstName} ${user.lastName}`,
+                            searchQuery
+                          ),
+                        }}
+                      ></h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Followers: {user._count.followers}, Following:{" "}
+                        {user._count.following}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleFollow(user.id)}
+                      disabled={user.isFollowing || user.followRequestSent}
+                      className={`px-4 py-2 rounded-lg transition-all disabled:opacity-50 ${
+                        user.isFollowing || user.followRequestSent
+                          ? "bg-gray-400 cursor-not-allowed"
+                          : "bg-green-500 hover:bg-green-600 text-white"
+                      }`}
+                    >
+                      {user.isFollowing
+                        ? "Following"
+                        : user.followRequestSent
+                        ? "Request Sent"
+                        : "Follow"}
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         ) : searchQuery && !isSearching ? (
-          <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-            No results found for "{searchQuery}"
+          <div className="text-center py-12">
+            <p className="text-gray-500 dark:text-gray-400 text-lg">
+              No users found matching{" "}
+              <strong className="text-blue-600 dark:text-blue-400">
+                "{searchQuery}"
+              </strong>
+            </p>
           </div>
         ) : null}
       </div>
