@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import axios from "axios";
 import { useNavigate, useParams } from "react-router-dom";
+import { useDarkMode } from "../context/DarkModeProvider";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -11,6 +12,7 @@ const TwoFA = () => {
   const [loading, setLoading] = useState(false);
   const inputRefs = useRef([]);
   const navigate = useNavigate();
+  const { isDarkMode } = useDarkMode();
 
   const handleChange = (index, value) => {
     if (/^\d*$/.test(value) && value.length <= 1) {
@@ -65,12 +67,28 @@ const TwoFA = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100">
-      <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-lg">
-        <h2 className="text-center text-2xl font-bold text-gray-700">
+    <div
+      className={`flex min-h-screen items-center justify-center transition-colors duration-300 ${
+        isDarkMode ? "dark bg-gray-900" : "bg-gray-100"
+      }`}
+    >
+      <div
+        className={`w-full max-w-md rounded-lg p-6 shadow-lg transition-colors duration-300 ${
+          isDarkMode ? "bg-gray-800" : "bg-white"
+        }`}
+      >
+        <h2
+          className={`text-center text-2xl font-bold transition-colors ${
+            isDarkMode ? "text-white" : "text-gray-700"
+          }`}
+        >
           Two-Factor Authentication
         </h2>
-        <p className="mt-2 text-center text-gray-600">
+        <p
+          className={`mt-2 text-center transition-colors ${
+            isDarkMode ? "text-gray-300" : "text-gray-600"
+          }`}
+        >
           A verification code has been sent to your email. Enter the 6-digit
           code below.
         </p>
@@ -92,7 +110,11 @@ const TwoFA = () => {
                 onChange={(e) => handleChange(index, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(index, e)}
                 maxLength="1"
-                className="w-12 h-12 text-center text-lg font-semibold border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                className={`w-12 h-12 text-center text-lg font-semibold border rounded-md focus:ring-1 focus:ring-blue-500 transition-colors ${
+                  isDarkMode
+                    ? "bg-gray-700 border-gray-600 text-white focus:border-blue-500"
+                    : "bg-white border-gray-300 text-gray-900 focus:border-blue-500"
+                }`}
               />
             ))}
           </div>
@@ -106,8 +128,12 @@ const TwoFA = () => {
           </button>
         </form>
 
-        <p className="mt-3 text-center text-sm text-gray-600">
-          Didn’t receive the code?{" "}
+        <p
+          className={`mt-3 text-center text-sm transition-colors ${
+            isDarkMode ? "text-gray-400" : "text-gray-600"
+          }`}
+        >
+          Didn't receive the code?{" "}
           <button className="text-blue-600 hover:underline">Resend Code</button>
         </p>
       </div>
