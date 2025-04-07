@@ -32,7 +32,7 @@ const Home = () => {
 
   return (
     <div
-      className={`min-h-screen ${
+      className={`min-h-screen transition-colors duration-300 ${
         isDarkMode ? "dark bg-gray-900" : "bg-gray-50"
       }`}
     >
@@ -42,7 +42,7 @@ const Home = () => {
       {/* Main content */}
       <div
         className={`transition-all duration-300 ${
-          isMobile ? "pt-16 pb-16" : "lg:ml-64"
+          isMobile ? "pt-16 pb-16" : "lg:ml-64 pt-6"
         }`}
       >
         <div className="max-w-5xl mx-auto px-4">
@@ -53,7 +53,11 @@ const Home = () => {
             }`}
           >
             <h1 className="text-2xl font-bold">Home</h1>
-            <p className="text-sm mt-1 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}">
+            <p
+              className={`text-sm mt-1 ${
+                isDarkMode ? "text-gray-300" : "text-gray-600"
+              }`}
+            >
               Latest posts from your network
             </p>
           </div>
@@ -72,7 +76,7 @@ const Home = () => {
                   isDarkMode
                     ? "bg-gray-800 text-white"
                     : "bg-white text-gray-800"
-                } rounded-lg shadow-md p-4`}
+                } rounded-lg shadow-md p-4 transition-colors duration-300`}
               >
                 <h3 className="font-semibold text-lg mb-3">Trending</h3>
                 <div className="space-y-4">
@@ -150,10 +154,10 @@ const Home = () => {
                         </div>
                       </div>
                       <button
-                        className={`text-xs px-3 py-1 rounded-full font-medium ${
+                        className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${
                           isDarkMode
-                            ? "bg-blue-600 text-white"
-                            : "bg-blue-100 text-blue-600"
+                            ? "bg-blue-600 hover:bg-blue-700 text-white"
+                            : "bg-blue-100 hover:bg-blue-200 text-blue-600"
                         }`}
                       >
                         Follow
