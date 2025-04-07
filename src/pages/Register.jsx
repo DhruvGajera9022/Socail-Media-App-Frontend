@@ -4,6 +4,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useDarkMode } from "../context/DarkModeProvider";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // Ensure this is correctly set in .env
 
@@ -31,6 +32,7 @@ const Register = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState("");
+  const { isDarkMode } = useDarkMode();
 
   // Redirect if token exists
   useEffect(() => {
@@ -68,9 +70,21 @@ const Register = () => {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-r bg-gray-100">
-      <div className="w-full max-w-md space-y-6 rounded-xl bg-white p-6 shadow-lg">
-        <h2 className="text-center text-3xl font-bold text-gray-800">
+    <div
+      className={`flex min-h-screen items-center justify-center transition-colors duration-300 ${
+        isDarkMode ? "dark bg-gray-900" : "bg-gray-100"
+      }`}
+    >
+      <div
+        className={`w-full max-w-md space-y-6 rounded-xl p-6 shadow-lg transition-colors duration-300 ${
+          isDarkMode ? "bg-gray-800" : "bg-white"
+        }`}
+      >
+        <h2
+          className={`text-center text-3xl font-bold transition-colors ${
+            isDarkMode ? "text-white" : "text-gray-800"
+          }`}
+        >
           Sign Up
         </h2>
 
@@ -84,12 +98,20 @@ const Register = () => {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {/* First Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label
+              className={`block text-sm font-medium transition-colors ${
+                isDarkMode ? "text-gray-300" : "text-gray-700"
+              }`}
+            >
               First Name
             </label>
             <input
               {...register("firstName")}
-              className="mt-1 w-full rounded-lg border border-gray-300 p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className={`mt-1 w-full rounded-lg border p-3 focus:ring-1 focus:ring-blue-500 transition-colors ${
+                isDarkMode
+                  ? "bg-gray-700 border-gray-600 text-white focus:border-blue-500"
+                  : "bg-white border-gray-300 text-gray-900 focus:border-blue-500"
+              }`}
               placeholder="John"
             />
             <p className="mt-1 text-sm text-red-500">
@@ -99,12 +121,20 @@ const Register = () => {
 
           {/* Last Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label
+              className={`block text-sm font-medium transition-colors ${
+                isDarkMode ? "text-gray-300" : "text-gray-700"
+              }`}
+            >
               Last Name
             </label>
             <input
               {...register("lastName")}
-              className="mt-1 w-full rounded-lg border border-gray-300 p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className={`mt-1 w-full rounded-lg border p-3 focus:ring-1 focus:ring-blue-500 transition-colors ${
+                isDarkMode
+                  ? "bg-gray-700 border-gray-600 text-white focus:border-blue-500"
+                  : "bg-white border-gray-300 text-gray-900 focus:border-blue-500"
+              }`}
               placeholder="Doe"
             />
             <p className="mt-1 text-sm text-red-500">
@@ -114,13 +144,21 @@ const Register = () => {
 
           {/* Email */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label
+              className={`block text-sm font-medium transition-colors ${
+                isDarkMode ? "text-gray-300" : "text-gray-700"
+              }`}
+            >
               Email
             </label>
             <input
               {...register("email")}
               type="email"
-              className="mt-1 w-full rounded-lg border border-gray-300 p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className={`mt-1 w-full rounded-lg border p-3 focus:ring-1 focus:ring-blue-500 transition-colors ${
+                isDarkMode
+                  ? "bg-gray-700 border-gray-600 text-white focus:border-blue-500"
+                  : "bg-white border-gray-300 text-gray-900 focus:border-blue-500"
+              }`}
               placeholder="john@example.com"
             />
             <p className="mt-1 text-sm text-red-500">{errors.email?.message}</p>
@@ -128,13 +166,21 @@ const Register = () => {
 
           {/* Password */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label
+              className={`block text-sm font-medium transition-colors ${
+                isDarkMode ? "text-gray-300" : "text-gray-700"
+              }`}
+            >
               Password
             </label>
             <input
               {...register("password")}
               type="password"
-              className="mt-1 w-full rounded-lg border border-gray-300 p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className={`mt-1 w-full rounded-lg border p-3 focus:ring-1 focus:ring-blue-500 transition-colors ${
+                isDarkMode
+                  ? "bg-gray-700 border-gray-600 text-white focus:border-blue-500"
+                  : "bg-white border-gray-300 text-gray-900 focus:border-blue-500"
+              }`}
               placeholder="********"
             />
             <p className="mt-1 text-sm text-red-500">
@@ -144,13 +190,21 @@ const Register = () => {
 
           {/* Confirm Password */}
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label
+              className={`block text-sm font-medium transition-colors ${
+                isDarkMode ? "text-gray-300" : "text-gray-700"
+              }`}
+            >
               Confirm Password
             </label>
             <input
               {...register("confirmPassword")}
               type="password"
-              className="mt-1 w-full rounded-lg border border-gray-300 p-3 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+              className={`mt-1 w-full rounded-lg border p-3 focus:ring-1 focus:ring-blue-500 transition-colors ${
+                isDarkMode
+                  ? "bg-gray-700 border-gray-600 text-white focus:border-blue-500"
+                  : "bg-white border-gray-300 text-gray-900 focus:border-blue-500"
+              }`}
               placeholder="********"
             />
             <p className="mt-1 text-sm text-red-500">
@@ -170,13 +224,33 @@ const Register = () => {
 
         {/* OR Divider */}
         <div className="flex items-center justify-center space-x-2">
-          <div className="h-px w-full bg-gray-300"></div>
-          <span className="text-sm text-gray-500">OR</span>
-          <div className="h-px w-full bg-gray-300"></div>
+          <div
+            className={`h-px w-full transition-colors ${
+              isDarkMode ? "bg-gray-600" : "bg-gray-300"
+            }`}
+          ></div>
+          <span
+            className={`text-sm transition-colors ${
+              isDarkMode ? "text-gray-400" : "text-gray-500"
+            }`}
+          >
+            OR
+          </span>
+          <div
+            className={`h-px w-full transition-colors ${
+              isDarkMode ? "bg-gray-600" : "bg-gray-300"
+            }`}
+          ></div>
         </div>
 
         {/* Google Register */}
-        <button className="w-full flex items-center justify-center space-x-2 rounded-lg border px-4 py-2 text-gray-700 hover:bg-gray-100 transition">
+        <button
+          className={`w-full flex items-center justify-center space-x-2 rounded-lg border px-4 py-2 hover:bg-gray-100 transition ${
+            isDarkMode
+              ? "border-gray-600 text-gray-300 hover:bg-gray-700"
+              : "border-gray-300 text-gray-700 hover:bg-gray-100"
+          }`}
+        >
           <img
             src="https://www.svgrepo.com/show/355037/google.svg"
             alt="Google Logo"
@@ -186,7 +260,11 @@ const Register = () => {
         </button>
 
         {/* Login Link */}
-        <p className="text-center text-sm text-gray-600">
+        <p
+          className={`text-center text-sm transition-colors ${
+            isDarkMode ? "text-gray-400" : "text-gray-600"
+          }`}
+        >
           Already have an account?{" "}
           <a href="/login" className="text-blue-600 hover:underline">
             Login
