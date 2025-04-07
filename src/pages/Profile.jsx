@@ -11,6 +11,10 @@ const Profile = () => {
   const accessToken = localStorage.getItem("accessToken");
   const { isDarkMode, toggleDarkMode } = useDarkMode();
 
+  const [modalTitle, setModalTitle] = useState("");
+  const [modalData, setModalData] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -43,25 +47,43 @@ const Profile = () => {
     }
   }, [accessToken]);
 
+  const fetchModalData = async (type) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/profile/${type}`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.status) {
+        setModalTitle(type === "followers" ? "followers" : "following");
+        setModalData(result.data);
+        setShowModal(true);
+      } else {
+        alert(result.message || "Failed to fetch data");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong!");
+    }
+  };
+
   const handleEditProfile = () => {
-    // Navigate to edit profile page or open modal
     console.log("Edit profile clicked");
-    // Implement navigation or modal opening logic here
   };
 
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
-    // Navigate to login page
     window.location.href = "/login";
   };
 
-  if (loading)
+  if (loading) {
     return (
       <div
-        className={`min-h-screen transition-colors duration-300 ${
-          isDarkMode ? "bg-gray-900" : "bg-gray-100"
-        }`}
+        className={`min-h-screen ${isDarkMode ? "bg-gray-900" : "bg-gray-100"}`}
       >
         <Navbar isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
         <div
@@ -73,25 +95,23 @@ const Profile = () => {
         </div>
       </div>
     );
+  }
 
-  if (error)
+  if (error) {
     return (
       <div
-        className={`min-h-screen transition-colors duration-300 ${
-          isDarkMode ? "bg-gray-900" : "bg-gray-100"
-        }`}
+        className={`min-h-screen ${isDarkMode ? "bg-gray-900" : "bg-gray-100"}`}
       >
         <Navbar isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
         <div className="text-center p-10 text-red-500">{error}</div>
       </div>
     );
+  }
 
-  if (!profile)
+  if (!profile) {
     return (
       <div
-        className={`min-h-screen transition-colors duration-300 ${
-          isDarkMode ? "bg-gray-900" : "bg-gray-100"
-        }`}
+        className={`min-h-screen ${isDarkMode ? "bg-gray-900" : "bg-gray-100"}`}
       >
         <Navbar isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
         <div
@@ -103,23 +123,64 @@ const Profile = () => {
         </div>
       </div>
     );
+  }
 
-  // Safely extract counts
   const followerCount = profile._count?.followers || profile.followerCount || 0;
   const followingCount =
     profile._count?.following || profile.followingCount || 0;
   const postsCount = profile._count?.posts || profile.postsCount || 0;
-
-  // Safely get posts array
   const posts = profile.posts || [];
 
   return (
     <div
-      className={`min-h-screen transition-colors duration-300 ${
-        isDarkMode ? "bg-gray-900" : "bg-gray-100"
-      }`}
+      className={`min-h-screen ${isDarkMode ? "bg-gray-900" : "bg-gray-100"}`}
     >
       <Navbar isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div
+            className={`bg-white dark:bg-gray-800 rounded-lg shadow-lg max-w-md w-full max-h-[80vh] overflow-y-auto p-6`}
+          >
+            <h3 className="text-xl font-semibold mb-4 dark:text-white">
+              {modalTitle.charAt(0).toUpperCase() + modalTitle.slice(1)}
+            </h3>
+
+            {modalData.length === 0 ? (
+              <p className="text-gray-500 dark:text-gray-300">
+                No users found.
+              </p>
+            ) : (
+              <ul className="space-y-3">
+                {modalData.map((user) => (
+                  <li key={user.id} className="flex items-center gap-4">
+                    <img
+                      src={user.profile_picture || "/api/placeholder/50/50"}
+                      alt={user.firstName}
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                    <div className="flex flex-col">
+                      <span className="font-medium dark:text-white">
+                        {user.firstName} {user.lastName}
+                      </span>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">
+                        {user.email}
+                      </span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <button
+              onClick={() => setShowModal(false)}
+              className="mt-6 w-full py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Profile Header */}
       <div className="max-w-4xl mx-auto mt-8 shadow-md rounded-lg overflow-hidden">
@@ -136,11 +197,9 @@ const Profile = () => {
               e.target.src = "/api/placeholder/150/150";
             }}
           />
-
           <h2 className="text-2xl font-bold mt-4">
             {profile.firstName} {profile.lastName}
           </h2>
-
           <p
             className={`mt-1 ${isDarkMode ? "text-gray-300" : "text-gray-600"}`}
           >
@@ -158,13 +217,19 @@ const Profile = () => {
           )}
 
           <div className="flex justify-center gap-8 mt-6">
-            <div>
+            <div
+              onClick={() => fetchModalData("followers")}
+              className="cursor-pointer"
+            >
               <span className="text-xl font-semibold">{followerCount}</span>
               <p className={isDarkMode ? "text-gray-400" : "text-gray-500"}>
                 Followers
               </p>
             </div>
-            <div>
+            <div
+              onClick={() => fetchModalData("following")}
+              className="cursor-pointer"
+            >
               <span className="text-xl font-semibold">{followingCount}</span>
               <p className={isDarkMode ? "text-gray-400" : "text-gray-500"}>
                 Following
@@ -178,7 +243,6 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* Profile Actions */}
           <div className="flex justify-center gap-4 mt-6">
             <button
               onClick={handleEditProfile}
@@ -196,7 +260,7 @@ const Profile = () => {
         </div>
       </div>
 
-      {/* User Posts */}
+      {/* Posts Section */}
       <div className="max-w-6xl mx-auto mt-8 px-4 pb-12">
         <h3
           className={`text-2xl font-semibold mb-6 ${
@@ -225,9 +289,8 @@ const Profile = () => {
                   isDarkMode ? "bg-gray-800" : "bg-white"
                 }`}
               >
-                {/* Post Image */}
                 <div className="relative aspect-square">
-                  {post.media_url && post.media_url.length > 0 ? (
+                  {post.media_url?.length > 0 ? (
                     <img
                       src={post.media_url[0]}
                       alt={post.title || "Post"}
@@ -252,8 +315,6 @@ const Profile = () => {
                     </div>
                   )}
                 </div>
-
-                {/* Post Content */}
                 <div className="p-4">
                   <h4
                     className={`font-semibold text-lg truncate ${
@@ -271,7 +332,6 @@ const Profile = () => {
                       {post.content}
                     </p>
                   )}
-
                   <div className="flex items-center justify-between mt-3">
                     <div className="flex items-center gap-4">
                       <div className="flex items-center">
