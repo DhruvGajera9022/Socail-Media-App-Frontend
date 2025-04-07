@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import Navbar from "../components/Navbar";
+import { useDarkMode } from "../context/DarkModeProvider";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -12,6 +13,7 @@ const CreatePost = () => {
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState({ type: "", text: "" });
   const fileInputRef = useRef(null);
+  const { isDarkMode } = useDarkMode();
 
   const accessToken = localStorage.getItem("accessToken");
 
@@ -122,7 +124,7 @@ const CreatePost = () => {
       formData.append("content", content);
 
       // Append each image to formData
-      images.forEach((image, index) => {
+      images.forEach((image) => {
         formData.append(`media_url`, image);
       });
 
@@ -163,11 +165,17 @@ const CreatePost = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div
+      className={`min-h-screen ${isDarkMode ? "bg-gray-800" : "bg-gray-100"}`}
+    >
       <Navbar />
 
       <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div
+          className={`${
+            isDarkMode ? "bg-gray-700 text-white" : "bg-white"
+          } rounded-lg shadow-md p-6`}
+        >
           <h1 className="text-2xl font-bold mb-6">Create New Post</h1>
 
           {/* Message display */}
@@ -188,7 +196,9 @@ const CreatePost = () => {
             <div className="mb-4">
               <label
                 htmlFor="title"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className={`block text-sm font-medium ${
+                  isDarkMode ? "text-gray-200" : "text-gray-700"
+                } mb-1`}
               >
                 Title
               </label>
@@ -198,7 +208,11 @@ const CreatePost = () => {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className={`w-full px-3 py-2 border rounded-md ${
-                  errors.title ? "border-red-500" : "border-gray-300"
+                  errors.title
+                    ? "border-red-500"
+                    : isDarkMode
+                    ? "border-gray-600 bg-gray-600 text-white"
+                    : "border-gray-300"
                 } focus:outline-none focus:ring-2 focus:ring-blue-500`}
                 placeholder="Enter post title"
                 disabled={isLoading}
@@ -212,7 +226,9 @@ const CreatePost = () => {
             <div className="mb-4">
               <label
                 htmlFor="content"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className={`block text-sm font-medium ${
+                  isDarkMode ? "text-gray-200" : "text-gray-700"
+                } mb-1`}
               >
                 Content
               </label>
@@ -222,7 +238,11 @@ const CreatePost = () => {
                 onChange={(e) => setContent(e.target.value)}
                 rows="5"
                 className={`w-full px-3 py-2 border rounded-md ${
-                  errors.content ? "border-red-500" : "border-gray-300"
+                  errors.content
+                    ? "border-red-500"
+                    : isDarkMode
+                    ? "border-gray-600 bg-gray-600 text-white"
+                    : "border-gray-300"
                 } focus:outline-none focus:ring-2 focus:ring-blue-500`}
                 placeholder="Write your post content here..."
                 disabled={isLoading}
@@ -234,7 +254,11 @@ const CreatePost = () => {
 
             {/* Image upload */}
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                className={`block text-sm font-medium ${
+                  isDarkMode ? "text-gray-200" : "text-gray-700"
+                } mb-2`}
+              >
                 Images (Max 5)
               </label>
 
@@ -261,7 +285,11 @@ const CreatePost = () => {
                   <button
                     type="button"
                     onClick={() => fileInputRef.current.click()}
-                    className="h-24 w-24 border-2 border-dashed border-gray-300 rounded-md flex items-center justify-center text-gray-500 hover:border-blue-500 hover:text-blue-500"
+                    className={`h-24 w-24 border-2 border-dashed ${
+                      isDarkMode
+                        ? "border-gray-500 text-gray-400 hover:border-blue-400 hover:text-blue-400"
+                        : "border-gray-300 text-gray-500 hover:border-blue-500 hover:text-blue-500"
+                    } rounded-md flex items-center justify-center`}
                     disabled={isLoading}
                   >
                     <svg
@@ -292,7 +320,11 @@ const CreatePost = () => {
                 disabled={isLoading}
               />
 
-              <p className="text-sm text-gray-500">
+              <p
+                className={`text-sm ${
+                  isDarkMode ? "text-gray-400" : "text-gray-500"
+                }`}
+              >
                 Supported formats: JPEG, PNG, GIF, WEBP (max 5MB each)
               </p>
             </div>

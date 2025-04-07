@@ -16,12 +16,14 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useDarkMode } from "../context/DarkModeProvider";
 
-const Navbar = ({ isDarkMode, toggleDarkMode }) => {
+const Navbar = () => {
   const navigate = useNavigate();
   const activeTab = location.pathname;
   const [expanded, setExpanded] = useState(true);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
 
   // Mock navigation function (replace with your router's navigation)
   const handleNavigation = (path) => {
@@ -194,6 +196,7 @@ const Navbar = ({ isDarkMode, toggleDarkMode }) => {
         </>
       )}
 
+      {/* Rest of your component... */}
       {/* Desktop Sidebar Navigation */}
       <div
         className={`hidden lg:block lg:fixed lg:left-0 lg:top-0 lg:h-full lg:border-r transition-all duration-300 ${
@@ -204,6 +207,7 @@ const Navbar = ({ isDarkMode, toggleDarkMode }) => {
             : "bg-white border-gray-200"
         }`}
       >
+        {/* ... rest of your desktop sidebar code ... */}
         <div
           className={`relative flex items-center p-5 ${
             expanded ? "justify-between" : "justify-center"

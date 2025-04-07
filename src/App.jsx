@@ -8,20 +8,23 @@ import CreatePost from "./pages/CreatePost";
 import Profile from "./pages/Profile";
 import AuthCallback from "./components/AuthCallback";
 import Search from "./pages/Search";
+import { DarkModeProvider } from "./context/DarkModeProvider";
 
 const App = () => {
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/verify-2fa/:id" element={<TwoFA />} />
-      <Route path="/auth/callback" element={<AuthCallback />} />
+    <DarkModeProvider>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/verify-2fa/:id" element={<TwoFA />} />
+        <Route path="/auth/callback" element={<AuthCallback />} />
 
-      <Route path="/" element={<Home />} />
-      <Route path="/create-post" element={<CreatePost />} />
-      <Route path="/profile" element={<Profile />} />
-      <Route path="/search" element={<Search />} />
-    </Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/create-post" element={<CreatePost />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/search" element={<Search />} />
+      </Routes>
+    </DarkModeProvider>
   );
 };
 
