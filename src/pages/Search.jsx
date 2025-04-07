@@ -51,25 +51,46 @@ const Search = ({ isDarkMode }) => {
     }
   };
 
-  const handleFollow = async (userId) => {
+  const handleFollow = async (user) => {
     const accessToken = localStorage.getItem("accessToken");
+    let endpoint = "";
+    let method = "POST";
+
+    if (user.isFollowing) {
+      // Unfollow
+      endpoint = `${API_BASE_URL}/profile/${user.id}/unfollow`;
+    } else if (user.followRequestSent) {
+      // Cancel request
+      endpoint = `${API_BASE_URL}/profile/${user.id}/cancel-request`;
+    } else {
+      // Follow
+      endpoint = `${API_BASE_URL}/profile/${user.id}/follow`;
+    }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/profile/follow/${userId}`, {
-        method: "POST",
+      const response = await fetch(endpoint, {
+        method,
         headers: {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
       });
 
-      if (!response.ok) throw new Error("Failed to send follow request");
+      if (!response.ok) throw new Error("Action failed");
 
       setSearchResults((prevResults) =>
-        prevResults.map((user) =>
-          user.id === userId
-            ? { ...user, isFollowing: true, followRequestSent: true }
-            : user
+        prevResults.map((u) =>
+          u.id === user.id
+            ? {
+                ...u,
+                isFollowing: user.isFollowing ? false : !user.followRequestSent,
+                followRequestSent: user.isFollowing
+                  ? false
+                  : user.followRequestSent
+                  ? false
+                  : true,
+              }
+            : u
         )
       );
     } catch (err) {
@@ -169,18 +190,17 @@ const Search = ({ isDarkMode }) => {
                       </p>
                     </div>
                     <button
-                      onClick={() => handleFollow(user.id)}
-                      disabled={user.isFollowing || user.followRequestSent}
-                      className={`px-4 py-2 rounded-lg transition-all disabled:opacity-50 ${
+                      onClick={() => handleFollow(user)}
+                      className={`px-4 py-2 rounded-lg transition-all ${
                         user.isFollowing || user.followRequestSent
-                          ? "bg-gray-400 cursor-not-allowed"
-                          : "bg-green-500 hover:bg-green-600 text-white"
-                      }`}
+                          ? "bg-red-500 hover:bg-red-600"
+                          : "bg-green-500 hover:bg-green-600"
+                      } text-white`}
                     >
                       {user.isFollowing
-                        ? "Following"
+                        ? "Unfollow"
                         : user.followRequestSent
-                        ? "Request Sent"
+                        ? "Cancel Request"
                         : "Follow"}
                     </button>
                   </div>
