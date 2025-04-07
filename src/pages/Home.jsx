@@ -1,19 +1,14 @@
 import React, { useState, useEffect } from "react";
 import Navbar from "../components/Navbar";
 import PostFeed from "../components/PostFeed";
+import { useDarkMode } from "../context/DarkModeProvider";
 
 const Home = () => {
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
+  const { isDarkMode, toggleDarkMode } = useDarkMode();
 
   // Handle responsive layout changes
   useEffect(() => {
-    // Check if user prefers dark mode
-    const prefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)"
-    ).matches;
-    setIsDarkMode(localStorage.getItem("darkMode") === "true" || prefersDark);
-
     // Set up responsive listener
     const handleResize = () => {
       setIsMobile(window.innerWidth < 1024);
@@ -22,13 +17,6 @@ const Home = () => {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
-
-  // Toggle dark mode handler
-  const toggleDarkMode = () => {
-    const newMode = !isDarkMode;
-    setIsDarkMode(newMode);
-    localStorage.setItem("darkMode", newMode);
-  };
 
   return (
     <div
