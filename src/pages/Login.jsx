@@ -5,6 +5,7 @@ import * as yup from "yup";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useDarkMode } from "../context/DarkModeProvider";
+import { useLocation } from "react-router-dom";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -27,6 +28,8 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const { isDarkMode } = useDarkMode();
+  // Inside the component
+  const location = useLocation();
 
   // Redirect if token exists
   useEffect(() => {
@@ -34,7 +37,12 @@ const Login = () => {
     if (token) {
       navigate("/");
     }
-  }, [navigate]);
+    const params = new URLSearchParams(location.search);
+    const googleError = params.get("error");
+    if (googleError === "google") {
+      setErrorMessage("Google login failed. Please try again.");
+    }
+  }, [navigate, location.search]);
 
   const onSubmit = async (data) => {
     setLoading(true);

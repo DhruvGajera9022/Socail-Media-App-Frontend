@@ -9,6 +9,7 @@ import Profile from "./pages/Profile";
 import AuthCallback from "./components/AuthCallback";
 import Search from "./pages/Search";
 import { DarkModeProvider } from "./context/DarkModeProvider";
+import GoogleAuthSuccess from "./components/GoogleAuthSuccess";
 
 const App = () => {
   return (
@@ -18,6 +19,7 @@ const App = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/verify-2fa/:id" element={<TwoFA />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/google-success" element={<GoogleAuthSuccess />} />
 
         <Route path="/" element={<Home />} />
         <Route path="/create-post" element={<CreatePost />} />
