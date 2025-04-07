@@ -10,6 +10,9 @@ import AuthCallback from "./components/AuthCallback";
 import Search from "./pages/Search";
 import { DarkModeProvider } from "./context/DarkModeProvider";
 import GoogleAuthSuccess from "./components/GoogleAuthSuccess";
+import Explore from "./pages/Explore";
+import Notifications from "./pages/Notifications";
+import Messages from "./pages/Messages";
 
 const App = () => {
   return (
@@ -25,6 +28,9 @@ const App = () => {
         <Route path="/create-post" element={<CreatePost />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/search" element={<Search />} />
+        <Route path="/explore" element={<Explore />} />
+        <Route path="/notifications" element={<Notifications />} />
+        <Route path="/messages" element={<Messages />} />
       </Routes>
     </DarkModeProvider>
   );
