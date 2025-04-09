@@ -8,6 +8,10 @@ import {
   Pin,
   ChevronLeft,
   ChevronRight,
+  Image as ImageIcon,
+  Link as LinkIcon,
+  Globe,
+  Clock,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -47,37 +51,66 @@ const PostFeed = ({ isDarkMode }) => {
   };
 
   const themeClasses = isDarkMode
-    ? "bg-gray-900 text-white border-gray-700"
-    : "bg-white text-gray-800 border-gray-200";
+    ? "bg-gray-900 text-white"
+    : "bg-white text-gray-800";
 
   return (
     <div className={`max-w-2xl mx-auto pt-6 pb-20 ${themeClasses}`}>
       {loading && (
-        <div className="flex justify-center items-center py-10">
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex justify-center items-center py-10"
+        >
           <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
           <span className="ml-2">Loading posts...</span>
-        </div>
+        </motion.div>
       )}
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg relative mb-4"
+        >
           <strong className="font-bold">Error:</strong>
           <span className="block sm:inline"> {error}</span>
-        </div>
+        </motion.div>
       )}
 
       {!loading &&
         !error &&
         (posts.length === 0 ? (
-          <div className="text-center py-10">
-            <p className="text-gray-500">No posts available</p>
-          </div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-center py-10"
+          >
+            <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-8 max-w-md mx-auto">
+              <ImageIcon className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+              <p className="text-gray-500 dark:text-gray-400">No posts available</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
+                Be the first to share something with your network!
+              </p>
+            </div>
+          </motion.div>
         ) : (
-          <div className="space-y-6">
-            {posts.map((post) => (
-              <Post key={post.id} post={post} isDarkMode={isDarkMode} />
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="space-y-6"
+          >
+            {posts.map((post, index) => (
+              <motion.div
+                key={post.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.1 }}
+              >
+                <Post post={post} isDarkMode={isDarkMode} />
+              </motion.div>
             ))}
-          </div>
+          </motion.div>
         ))}
     </div>
   );
@@ -90,6 +123,7 @@ const Post = ({ post, isDarkMode }) => {
   const [likeCount, setLikeCount] = useState(post.likes_count || 0);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [slideDirection, setSlideDirection] = useState("right");
+  const [showActions, setShowActions] = useState(false);
 
   const accessToken = localStorage.getItem("accessToken");
 
@@ -108,14 +142,18 @@ const Post = ({ post, isDarkMode }) => {
         border: "border-gray-700",
         hover: "hover:bg-gray-700",
         icon: "text-gray-300",
+        card: "bg-gray-800",
+        input: "bg-gray-700 text-white",
       }
     : {
         container: "bg-white text-gray-800 border-gray-200",
         text: "text-gray-800",
         secondaryText: "text-gray-500",
         border: "border-gray-100",
-        hover: "hover:bg-gray-100",
+        hover: "hover:bg-gray-50",
         icon: "text-gray-600",
+        card: "bg-white",
+        input: "bg-gray-50 text-gray-800",
       };
 
   useEffect(() => {
@@ -206,84 +244,96 @@ const Post = ({ post, isDarkMode }) => {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    const now = new Date();
+    const diffTime = Math.abs(now - date);
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+    const diffMinutes = Math.floor(diffTime / (1000 * 60));
+
+    if (diffMinutes < 60) {
+      return `${diffMinutes}m ago`;
+    } else if (diffHours < 24) {
+      return `${diffHours}h ago`;
+    } else if (diffDays < 7) {
+      return `${diffDays}d ago`;
+    } else {
+      return date.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
+    }
   };
 
   if (!accessToken) {
     return (
-      <div
-        className={`${postTheme.container} rounded-lg shadow-md p-4 text-center`}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={`${postTheme.container} rounded-xl shadow-lg p-6 text-center`}
       >
-        Please log in to view posts
-      </div>
+        <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
+          <Globe className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+          <p className="text-gray-600 dark:text-gray-300">Please log in to view posts</p>
+        </div>
+      </motion.div>
     );
   }
 
   return (
-    <div
-      className={`${postTheme.container} rounded-lg shadow-md overflow-hidden border ${postTheme.border}`}
+    <motion.div
+      whileHover={{ scale: 1.01 }}
+      className={`${postTheme.container} rounded-xl shadow-lg overflow-hidden border ${postTheme.border}`}
     >
+      {/* Post Header */}
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center">
-          <img
+          <motion.img
+            whileHover={{ scale: 1.1 }}
             src={post.user?.profile_picture || "/api/placeholder/40/40"}
             alt={post.user?.name || "User"}
-            className="w-10 h-10 rounded-full object-cover"
+            className="w-12 h-12 rounded-full object-cover border-2 border-blue-500"
           />
           <div className="ml-3">
             <div className="flex items-center">
-              <h3 className={`font-medium ${postTheme.text}`}>
-                {post.user?.firstName || "User"}
+              <h3 className={`font-semibold ${postTheme.text}`}>
+                {post.user?.username || "User"}
               </h3>
-              <span className={`${postTheme.secondaryText} text-sm ml-2`}>
-                @{post.user?.lastName || "user"}
-              </span>
               {post.pinned && (
-                <div className="ml-2 flex items-center text-blue-400 text-xs">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="ml-2 flex items-center text-blue-400 text-xs bg-blue-400/10 px-2 py-1 rounded-full"
+                >
                   <Pin size={12} className="mr-1" />
                   <span>Pinned</span>
-                </div>
+                </motion.div>
               )}
             </div>
-            <p className={`text-xs ${postTheme.secondaryText}`}>
-              {formatDate(post.created_at)}
-            </p>
+            <div className="flex items-center text-sm text-gray-500">
+              <Clock size={14} className="mr-1" />
+              <span>{formatDate(post.created_at)}</span>
+            </div>
           </div>
         </div>
-        <button className={postTheme.icon}>
-          <MoreHorizontal size={20} />
+        <button
+          onClick={() => setShowActions(!showActions)}
+          className={`p-2 rounded-full ${postTheme.hover}`}
+        >
+          <MoreHorizontal className={postTheme.icon} />
         </button>
       </div>
 
-      {post.title && (
-        <div className="px-4 pb-2">
-          <h2 className={`font-bold text-lg ${postTheme.text}`}>
-            {post.title}
-          </h2>
-        </div>
-      )}
-
+      {/* Post Content */}
       <div className="px-4 pb-4">
-        <p className={`${postTheme.text} whitespace-pre-line`}>
-          {post.content}
-        </p>
-      </div>
+        <p className={`${postTheme.text} text-lg mb-4`}>{post.content}</p>
 
-      {mediaUrls.length > 0 && (
-        <div className="relative w-full bg-gray-100 dark:bg-gray-700">
-          <div className="overflow-hidden relative h-64">
-            <AnimatePresence initial={false} mode="wait">
+        {/* Media Content */}
+        {mediaUrls.length > 0 && (
+          <div className="relative rounded-xl overflow-hidden mb-4">
+            <AnimatePresence mode="wait">
               <motion.img
                 key={currentImageIndex}
-                src={mediaUrls[currentImageIndex]}
-                alt={`Post content ${currentImageIndex + 1}`}
-                className="w-full h-full object-cover"
                 initial={{
                   opacity: 0,
                   x: slideDirection === "right" ? 100 : -100,
@@ -294,110 +344,87 @@ const Post = ({ post, isDarkMode }) => {
                   x: slideDirection === "right" ? -100 : 100,
                 }}
                 transition={{ duration: 0.3 }}
+                src={mediaUrls[currentImageIndex]}
+                alt={`Post media ${currentImageIndex + 1}`}
+                className="w-full h-auto object-cover"
               />
             </AnimatePresence>
 
+            {/* Image Navigation */}
             {hasMultipleImages && (
               <>
                 <button
                   onClick={prevImage}
-                  className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white rounded-full p-1 hover:bg-opacity-70 transition-all"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors"
                 >
-                  <ChevronLeft size={24} />
+                  <ChevronLeft size={20} />
                 </button>
                 <button
                   onClick={nextImage}
-                  className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 text-white rounded-full p-1 hover:bg-opacity-70 transition-all"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors"
                 >
-                  <ChevronRight size={24} />
+                  <ChevronRight size={20} />
                 </button>
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex space-x-2">
+                  {mediaUrls.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => goToImage(index)}
+                      className={`w-2 h-2 rounded-full transition-colors ${
+                        index === currentImageIndex
+                          ? "bg-white"
+                          : "bg-white/50 hover:bg-white/75"
+                      }`}
+                    />
+                  ))}
+                </div>
               </>
             )}
           </div>
+        )}
 
-          {hasMultipleImages && (
-            <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1">
-              {mediaUrls.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => goToImage(index)}
-                  className={`w-2 h-2 rounded-full transition-all ${
-                    currentImageIndex === index
-                      ? "bg-white w-3"
-                      : "bg-white bg-opacity-60"
-                  }`}
-                  aria-label={`Go to image ${index + 1}`}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      <div
-        className={`px-4 py-2 ${postTheme.border} text-sm ${postTheme.secondaryText} flex items-center`}
-      >
-        <div className="flex items-center mr-4">
-          <Heart size={16} className="mr-1" />
-          <span>{likeCount} likes</span>
-        </div>
-        <div className="flex items-center">
-          <MessageCircle size={16} className="mr-1" />
-          <span>Comments</span>
-        </div>
-        <div className="ml-auto flex items-center">
-          <span>{post.views_count} views</span>
+        {/* Post Actions */}
+        <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="flex items-center space-x-4">
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              onClick={toggleLike}
+              className={`flex items-center space-x-1 ${
+                liked ? "text-red-500" : postTheme.icon
+              }`}
+            >
+              <Heart
+                size={20}
+                className={liked ? "fill-current" : ""}
+              />
+              <span>{likeCount}</span>
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              className={`flex items-center space-x-1 ${postTheme.icon}`}
+            >
+              <MessageCircle size={20} />
+              <span>{post.comments_count || 0}</span>
+            </motion.button>
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              className={`flex items-center space-x-1 ${postTheme.icon}`}
+            >
+              <Share2 size={20} />
+            </motion.button>
+          </div>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={toggleSave}
+            className={`flex items-center space-x-1 ${
+              saved ? "text-blue-500" : postTheme.icon
+            }`}
+          >
+            <Bookmark size={20} className={saved ? "fill-current" : ""} />
+          </motion.button>
         </div>
       </div>
-
-      <div className={`px-4 py-2 ${postTheme.border} flex justify-between`}>
-        <button
-          onClick={toggleLike}
-          className={`flex items-center justify-center px-4 py-2 rounded-md transition-colors ${
-            liked
-              ? "text-red-500 bg-red-100 dark:bg-red-900"
-              : `${postTheme.icon} ${postTheme.hover}`
-          }`}
-        >
-          <Heart size={18} className={liked ? "fill-current" : ""} />
-          <span className="ml-2">Like</span>
-        </button>
-
-        <button
-          className={`flex items-center justify-center px-4 py-2 rounded-md transition-colors ${postTheme.icon} ${postTheme.hover}`}
-        >
-          <MessageCircle size={18} />
-          <span className="ml-2">Comment</span>
-        </button>
-
-        <button
-          className={`flex items-center justify-center px-4 py-2 rounded-md transition-colors ${postTheme.icon} ${postTheme.hover}`}
-        >
-          <Share2 size={18} />
-          <span className="ml-2">Share</span>
-        </button>
-
-        <button
-          onClick={toggleSave}
-          className={`flex items-center justify-center px-4 py-2 rounded-md transition-colors ${
-            saved
-              ? "text-blue-500 bg-blue-100 dark:bg-blue-900"
-              : `${postTheme.icon} ${postTheme.hover}`
-          }`}
-        >
-          <Bookmark size={18} className={saved ? "fill-current" : ""} />
-          <span className="ml-2">Save</span>
-        </button>
-      </div>
-
-      {post.updated_at !== post.created_at && (
-        <div
-          className={`px-4 py-1 text-xs ${postTheme.secondaryText} ${postTheme.border}`}
-        >
-          Edited {formatDate(post.updated_at)}
-        </div>
-      )}
-    </div>
+    </motion.div>
   );
 };
 
