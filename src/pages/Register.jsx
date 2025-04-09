@@ -9,8 +9,7 @@ import { useDarkMode } from "../context/DarkModeProvider";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL; // Ensure this is correctly set in .env
 
 const schema = yup.object().shape({
-  firstName: yup.string().required("First name is required"),
-  lastName: yup.string().required("Last name is required"),
+  username: yup.string().required("Username is required"),
   email: yup.string().email("Invalid email").required("Email is required"),
   password: yup
     .string()
@@ -96,49 +95,26 @@ const Register = () => {
         )}
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* First Name */}
+          {/* User Name */}
           <div>
             <label
               className={`block text-sm font-medium transition-colors ${
                 isDarkMode ? "text-gray-300" : "text-gray-700"
               }`}
             >
-              First Name
+              Username
             </label>
             <input
-              {...register("firstName")}
+              {...register("username")}
               className={`mt-1 w-full rounded-lg border p-3 focus:ring-1 focus:ring-blue-500 transition-colors ${
                 isDarkMode
                   ? "bg-gray-700 border-gray-600 text-white focus:border-blue-500"
                   : "bg-white border-gray-300 text-gray-900 focus:border-blue-500"
               }`}
-              placeholder="John"
+              placeholder="John@123"
             />
             <p className="mt-1 text-sm text-red-500">
-              {errors.firstName?.message}
-            </p>
-          </div>
-
-          {/* Last Name */}
-          <div>
-            <label
-              className={`block text-sm font-medium transition-colors ${
-                isDarkMode ? "text-gray-300" : "text-gray-700"
-              }`}
-            >
-              Last Name
-            </label>
-            <input
-              {...register("lastName")}
-              className={`mt-1 w-full rounded-lg border p-3 focus:ring-1 focus:ring-blue-500 transition-colors ${
-                isDarkMode
-                  ? "bg-gray-700 border-gray-600 text-white focus:border-blue-500"
-                  : "bg-white border-gray-300 text-gray-900 focus:border-blue-500"
-              }`}
-              placeholder="Doe"
-            />
-            <p className="mt-1 text-sm text-red-500">
-              {errors.lastName?.message}
+              {errors.username?.message}
             </p>
           </div>
 
