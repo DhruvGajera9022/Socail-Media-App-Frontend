@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import Navbar from "../components/Navbar";
 import { useDarkMode } from "../context/DarkModeProvider";
 import {
@@ -15,6 +15,8 @@ import {
   Globe,
   ChevronLeft,
   ChevronRight,
+  X,
+  Save,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -32,6 +34,18 @@ const Profile = () => {
   const [showModal, setShowModal] = useState(false);
   const [activeTab, setActiveTab] = useState("posts");
   const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    firstName: "",
+    lastName: "",
+    username: "",
+    bio: "",
+    location: "",
+    website: "",
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [editError, setEditError] = useState(null);
+  const [isUploadingPicture, setIsUploadingPicture] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -46,6 +60,14 @@ const Profile = () => {
 
         if (response.ok && data.status) {
           setProfile(data.data);
+          setEditForm({
+            firstName: data.data.firstName || "",
+            lastName: data.data.lastName || "",
+            username: data.data.username || "",
+            bio: data.data.bio || "",
+            location: data.data.location || "",
+            website: data.data.website || "",
+          });
         } else {
           setError(data.message || "Failed to load profile");
         }
@@ -92,10 +114,147 @@ const Profile = () => {
     setIsEditing(true);
   };
 
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditError(null);
+    setEditForm({
+      firstName: profile.firstName || "",
+      lastName: profile.lastName || "",
+      username: profile.username || "",
+      bio: profile.bio || "",
+      location: profile.location || "",
+      website: profile.website || "",
+    });
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSaveProfile = async () => {
+    setIsSaving(true);
+    setEditError(null);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify(editForm),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.status) {
+        setProfile((prevProfile) => ({
+          ...prevProfile,
+          ...data.data,
+          firstName: editForm.firstName,
+          lastName: editForm.lastName,
+          username: editForm.username,
+          bio: editForm.bio,
+          location: editForm.location,
+          website: editForm.website,
+        }));
+        setIsEditing(false);
+      } else {
+        setEditError(data.message || "Failed to update profile");
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      setEditError("Network error. Please try again later.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     window.location.href = "/login";
+  };
+
+  const handleProfilePictureClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleProfilePictureChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file');
+      return;
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image size should be less than 5MB');
+      return;
+    }
+
+    setIsUploadingPicture(true);
+    const formData = new FormData();
+    formData.append('profile_picture', file);
+
+    try {
+      // Create a temporary URL for immediate display
+      const imageUrl = URL.createObjectURL(file);
+      
+      // Update the profile picture immediately for better UX
+      const profileImage = document.querySelector('img[alt="Profile"]');
+      if (profileImage) {
+        profileImage.src = imageUrl;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/profile/profile-picture`, {
+        method: 'PUT',
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.status) {
+        // Update the profile state with the new profile picture URL
+        setProfile(prevProfile => {
+          if (!prevProfile) return null;
+          return {
+            ...prevProfile,
+            profile_picture: data.data.profile_picture,
+          };
+        });
+      } else {
+        // If the update fails, revert to the original image
+        if (profileImage && profile.profile_picture) {
+          profileImage.src = profile.profile_picture;
+        }
+        alert(data.message || 'Failed to update profile picture');
+      }
+    } catch (error) {
+      console.error('Error updating profile picture:', error);
+      // If there's an error, revert to the original image
+      const profileImage = document.querySelector('img[alt="Profile"]');
+      if (profileImage && profile.profile_picture) {
+        profileImage.src = profile.profile_picture;
+      }
+      alert('Failed to update profile picture. Please try again.');
+    } finally {
+      setIsUploadingPicture(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
   if (loading) {
@@ -106,7 +265,9 @@ const Profile = () => {
         <Navbar isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
         <div className="flex justify-center items-center h-[calc(100vh-64px)]">
           <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-          <span className={`ml-2 ${isDarkMode ? "text-white" : "text-gray-800"}`}>
+          <span
+            className={`ml-2 ${isDarkMode ? "text-white" : "text-gray-800"}`}
+          >
             Loading profile...
           </span>
         </div>
@@ -138,12 +299,16 @@ const Profile = () => {
         <Navbar isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
         <div className="flex justify-center items-center h-[calc(100vh-64px)]">
           <div className="text-center">
-            <Users className={`w-12 h-12 mx-auto mb-4 ${
-              isDarkMode ? "text-gray-400" : "text-gray-500"
-            }`} />
-            <p className={`text-lg ${
-              isDarkMode ? "text-white" : "text-gray-800"
-            }`}>
+            <Users
+              className={`w-12 h-12 mx-auto mb-4 ${
+                isDarkMode ? "text-gray-400" : "text-gray-500"
+              }`}
+            />
+            <p
+              className={`text-lg ${
+                isDarkMode ? "text-white" : "text-gray-800"
+              }`}
+            >
               Profile not found
             </p>
           </div>
@@ -164,6 +329,222 @@ const Profile = () => {
     >
       <Navbar isDarkMode={isDarkMode} toggleDarkMode={toggleDarkMode} />
 
+      {/* Hidden file input for profile picture */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleProfilePictureChange}
+        accept="image/*"
+        className="hidden"
+      />
+
+      {/* Edit Profile Modal */}
+      <AnimatePresence>
+        {isEditing && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className={`${
+                isDarkMode ? "bg-gray-800" : "bg-white"
+              } rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden`}
+            >
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <h3
+                  className={`text-xl font-semibold ${
+                    isDarkMode ? "text-white" : "text-gray-900"
+                  }`}
+                >
+                  Edit Profile
+                </h3>
+                <button
+                  onClick={handleCancelEdit}
+                  className={`p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${
+                    isDarkMode ? "text-gray-400" : "text-gray-500"
+                  }`}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
+                {editError && (
+                  <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg">
+                    <strong className="font-bold">Error:</strong>
+                    <span className="block sm:inline"> {editError}</span>
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label
+                        className={`block text-sm font-medium mb-1 ${
+                          isDarkMode ? "text-gray-300" : "text-gray-700"
+                        }`}
+                      >
+                        First Name
+                      </label>
+                      <input
+                        type="text"
+                        name="firstName"
+                        value={editForm.firstName}
+                        onChange={handleInputChange}
+                        className={`w-full px-3 py-2 rounded-lg border ${
+                          isDarkMode
+                            ? "bg-gray-700 border-gray-600 text-white"
+                            : "bg-white border-gray-300 text-gray-900"
+                        } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      />
+                    </div>
+                    <div>
+                      <label
+                        className={`block text-sm font-medium mb-1 ${
+                          isDarkMode ? "text-gray-300" : "text-gray-700"
+                        }`}
+                      >
+                        Last Name
+                      </label>
+                      <input
+                        type="text"
+                        name="lastName"
+                        value={editForm.lastName}
+                        onChange={handleInputChange}
+                        className={`w-full px-3 py-2 rounded-lg border ${
+                          isDarkMode
+                            ? "bg-gray-700 border-gray-600 text-white"
+                            : "bg-white border-gray-300 text-gray-900"
+                        } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label
+                      className={`block text-sm font-medium mb-1 ${
+                        isDarkMode ? "text-gray-300" : "text-gray-700"
+                      }`}
+                    >
+                      Username
+                    </label>
+                    <input
+                      type="text"
+                      name="username"
+                      value={editForm.username}
+                      onChange={handleInputChange}
+                      className={`w-full px-3 py-2 rounded-lg border ${
+                        isDarkMode
+                          ? "bg-gray-700 border-gray-600 text-white"
+                          : "bg-white border-gray-300 text-gray-900"
+                      } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      className={`block text-sm font-medium mb-1 ${
+                        isDarkMode ? "text-gray-300" : "text-gray-700"
+                      }`}
+                    >
+                      Bio
+                    </label>
+                    <textarea
+                      name="bio"
+                      value={editForm.bio}
+                      onChange={handleInputChange}
+                      rows="3"
+                      className={`w-full px-3 py-2 rounded-lg border ${
+                        isDarkMode
+                          ? "bg-gray-700 border-gray-600 text-white"
+                          : "bg-white border-gray-300 text-gray-900"
+                      } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      className={`block text-sm font-medium mb-1 ${
+                        isDarkMode ? "text-gray-300" : "text-gray-700"
+                      }`}
+                    >
+                      Location
+                    </label>
+                    <input
+                      type="text"
+                      name="location"
+                      value={editForm.location}
+                      onChange={handleInputChange}
+                      className={`w-full px-3 py-2 rounded-lg border ${
+                        isDarkMode
+                          ? "bg-gray-700 border-gray-600 text-white"
+                          : "bg-white border-gray-300 text-gray-900"
+                      } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      className={`block text-sm font-medium mb-1 ${
+                        isDarkMode ? "text-gray-300" : "text-gray-700"
+                      }`}
+                    >
+                      Website
+                    </label>
+                    <input
+                      type="url"
+                      name="website"
+                      value={editForm.website}
+                      onChange={handleInputChange}
+                      className={`w-full px-3 py-2 rounded-lg border ${
+                        isDarkMode
+                          ? "bg-gray-700 border-gray-600 text-white"
+                          : "bg-white border-gray-300 text-gray-900"
+                      } focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-4">
+                <button
+                  onClick={handleCancelEdit}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    isDarkMode
+                      ? "bg-gray-700 hover:bg-gray-600 text-white"
+                      : "bg-gray-100 hover:bg-gray-200 text-gray-800"
+                  }`}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveProfile}
+                  disabled={isSaving}
+                  className="flex items-center gap-2 bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSaving ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save size={18} />
+                      Save Changes
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Followers/Following Modal */}
       <AnimatePresence>
         {showModal && (
@@ -182,9 +563,11 @@ const Profile = () => {
               } rounded-xl shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden`}
             >
               <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                <h3 className={`text-xl font-semibold ${
-                  isDarkMode ? "text-white" : "text-gray-900"
-                }`}>
+                <h3
+                  className={`text-xl font-semibold ${
+                    isDarkMode ? "text-white" : "text-gray-900"
+                  }`}
+                >
                   {modalTitle.charAt(0).toUpperCase() + modalTitle.slice(1)}
                 </h3>
               </div>
@@ -192,12 +575,16 @@ const Profile = () => {
               <div className="p-6 overflow-y-auto max-h-[60vh]">
                 {modalData.length === 0 ? (
                   <div className="text-center py-8">
-                    <Users className={`w-12 h-12 mx-auto mb-4 ${
-                      isDarkMode ? "text-gray-400" : "text-gray-500"
-                    }`} />
-                    <p className={`${
-                      isDarkMode ? "text-gray-300" : "text-gray-500"
-                    }`}>
+                    <Users
+                      className={`w-12 h-12 mx-auto mb-4 ${
+                        isDarkMode ? "text-gray-400" : "text-gray-500"
+                      }`}
+                    />
+                    <p
+                      className={`${
+                        isDarkMode ? "text-gray-300" : "text-gray-500"
+                      }`}
+                    >
                       No users found.
                     </p>
                   </div>
@@ -218,14 +605,18 @@ const Profile = () => {
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
                             <div>
-                              <span className={`font-medium ${
-                                isDarkMode ? "text-white" : "text-gray-900"
-                              }`}>
+                              <span
+                                className={`font-medium ${
+                                  isDarkMode ? "text-white" : "text-gray-900"
+                                }`}
+                              >
                                 {user.firstName} {user.lastName}
                               </span>
-                              <p className={`text-sm ${
-                                isDarkMode ? "text-gray-400" : "text-gray-500"
-                              }`}>
+                              <p
+                                className={`text-sm ${
+                                  isDarkMode ? "text-gray-400" : "text-gray-500"
+                                }`}
+                              >
                                 @{user.username || user.email.split("@")[0]}
                               </p>
                             </div>
@@ -285,27 +676,45 @@ const Profile = () => {
                     e.target.src = "/api/placeholder/150/150";
                   }}
                 />
-                <button className="absolute bottom-0 right-0 bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 transition-colors">
-                  <Camera size={16} />
+                <button
+                  onClick={handleProfilePictureClick}
+                  disabled={isUploadingPicture}
+                  className={`absolute bottom-0 right-0 p-2 rounded-full transition-colors ${
+                    isUploadingPicture
+                      ? "bg-gray-500 cursor-not-allowed"
+                      : "bg-blue-500 hover:bg-blue-600"
+                  } text-white`}
+                >
+                  {isUploadingPicture ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <Camera size={16} />
+                  )}
                 </button>
               </div>
 
               <div className="text-center mt-4">
-                <h2 className={`text-2xl font-bold ${
-                  isDarkMode ? "text-white" : "text-gray-900"
-                }`}>
+                <h2
+                  className={`text-2xl font-bold ${
+                    isDarkMode ? "text-white" : "text-gray-900"
+                  }`}
+                >
                   {profile.firstName} {profile.lastName}
                 </h2>
-                <p className={`mt-1 ${
-                  isDarkMode ? "text-gray-300" : "text-gray-600"
-                }`}>
+                <p
+                  className={`mt-1 ${
+                    isDarkMode ? "text-gray-300" : "text-gray-600"
+                  }`}
+                >
                   @{profile.username || profile.email.split("@")[0]}
                 </p>
 
                 {profile.bio && (
-                  <p className={`mt-3 max-w-lg ${
-                    isDarkMode ? "text-gray-300" : "text-gray-700"
-                  }`}>
+                  <p
+                    className={`mt-3 max-w-lg ${
+                      isDarkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
                     {profile.bio}
                   </p>
                 )}
@@ -317,14 +726,18 @@ const Profile = () => {
                     onClick={() => fetchModalData("followers")}
                     className="cursor-pointer text-center"
                   >
-                    <span className={`text-xl font-semibold ${
-                      isDarkMode ? "text-white" : "text-gray-900"
-                    }`}>
+                    <span
+                      className={`text-xl font-semibold ${
+                        isDarkMode ? "text-white" : "text-gray-900"
+                      }`}
+                    >
                       {followerCount}
                     </span>
-                    <p className={`text-sm ${
-                      isDarkMode ? "text-gray-400" : "text-gray-500"
-                    }`}>
+                    <p
+                      className={`text-sm ${
+                        isDarkMode ? "text-gray-400" : "text-gray-500"
+                      }`}
+                    >
                       Followers
                     </p>
                   </motion.div>
@@ -333,26 +746,34 @@ const Profile = () => {
                     onClick={() => fetchModalData("following")}
                     className="cursor-pointer text-center"
                   >
-                    <span className={`text-xl font-semibold ${
-                      isDarkMode ? "text-white" : "text-gray-900"
-                    }`}>
+                    <span
+                      className={`text-xl font-semibold ${
+                        isDarkMode ? "text-white" : "text-gray-900"
+                      }`}
+                    >
                       {followingCount}
                     </span>
-                    <p className={`text-sm ${
-                      isDarkMode ? "text-gray-400" : "text-gray-500"
-                    }`}>
+                    <p
+                      className={`text-sm ${
+                        isDarkMode ? "text-gray-400" : "text-gray-500"
+                      }`}
+                    >
                       Following
                     </p>
                   </motion.div>
                   <div className="text-center">
-                    <span className={`text-xl font-semibold ${
-                      isDarkMode ? "text-white" : "text-gray-900"
-                    }`}>
+                    <span
+                      className={`text-xl font-semibold ${
+                        isDarkMode ? "text-white" : "text-gray-900"
+                      }`}
+                    >
                       {postsCount}
                     </span>
-                    <p className={`text-sm ${
-                      isDarkMode ? "text-gray-400" : "text-gray-500"
-                    }`}>
+                    <p
+                      className={`text-sm ${
+                        isDarkMode ? "text-gray-400" : "text-gray-500"
+                      }`}
+                    >
                       Posts
                     </p>
                   </div>
@@ -387,9 +808,11 @@ const Profile = () => {
                 {/* Additional Info */}
                 <div className="flex flex-wrap justify-center gap-4 mt-6">
                   {profile.location && (
-                    <div className={`flex items-center gap-1 ${
-                      isDarkMode ? "text-gray-400" : "text-gray-500"
-                    }`}>
+                    <div
+                      className={`flex items-center gap-1 ${
+                        isDarkMode ? "text-gray-400" : "text-gray-500"
+                      }`}
+                    >
                       <MapPin size={16} />
                       <span>{profile.location}</span>
                     </div>
@@ -407,14 +830,22 @@ const Profile = () => {
                       <span>{profile.website}</span>
                     </a>
                   )}
-                  <div className={`flex items-center gap-1 ${
-                    isDarkMode ? "text-gray-400" : "text-gray-500"
-                  }`}>
+                  <div
+                    className={`flex items-center gap-1 ${
+                      isDarkMode ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  >
                     <Calendar size={16} />
-                    <span>Joined {new Date(profile.created_at).toLocaleDateString("en-US", {
-                      year: "numeric",
-                      month: "long",
-                    })}</span>
+                    <span>
+                      Joined{" "}
+                      {new Date(profile.created_at).toLocaleDateString(
+                        "en-US",
+                        {
+                          year: "numeric",
+                          month: "long",
+                        }
+                      )}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -424,9 +855,11 @@ const Profile = () => {
 
         {/* Content Tabs */}
         <div className="mt-8">
-          <div className={`${
-            isDarkMode ? "bg-gray-800" : "bg-white"
-          } rounded-xl shadow-lg overflow-hidden`}>
+          <div
+            className={`${
+              isDarkMode ? "bg-gray-800" : "bg-white"
+            } rounded-xl shadow-lg overflow-hidden`}
+          >
             <div className="flex border-b border-gray-200 dark:border-gray-700">
               <button
                 onClick={() => setActiveTab("posts")}
@@ -495,9 +928,11 @@ const Profile = () => {
               )}
 
               {activeTab === "about" && (
-                <div className={`space-y-6 ${
-                  isDarkMode ? "text-gray-300" : "text-gray-700"
-                }`}>
+                <div
+                  className={`space-y-6 ${
+                    isDarkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
                   <div>
                     <h3 className="font-semibold mb-2">Bio</h3>
                     <p>{profile.bio || "No bio available"}</p>
@@ -520,11 +955,14 @@ const Profile = () => {
                   <div>
                     <h3 className="font-semibold mb-2">Joined</h3>
                     <p>
-                      {new Date(profile.created_at).toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
+                      {new Date(profile.created_at).toLocaleDateString(
+                        "en-US",
+                        {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        }
+                      )}
                     </p>
                   </div>
                 </div>
@@ -533,7 +971,9 @@ const Profile = () => {
               {activeTab === "media" && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {posts
-                    .filter((post) => post.media_url && post.media_url.length > 0)
+                    .filter(
+                      (post) => post.media_url && post.media_url.length > 0
+                    )
                     .map((post) => (
                       <motion.div
                         key={post.id}
