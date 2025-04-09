@@ -39,7 +39,13 @@ const Register = () => {
     if (token) {
       navigate("/");
     }
-  }, [navigate]);
+
+    const params = new URLSearchParams(location.search);
+    const googleError = params.get("error");
+    if (googleError === "google") {
+      setErrorMessage("Google login failed. Please try again.");
+    }
+  }, [navigate, location.search]);
 
   const onSubmit = async (data) => {
     setLoading(true);
@@ -65,6 +71,28 @@ const Register = () => {
       setServerError(error.response?.data?.data || "Something went wrong!");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const googleAuth = async () => {
+    try {
+      window.location.href = `${API_BASE_URL}/auth/google`;
+      const resData = response.data;
+
+      if (resData.status) {
+        const { accessToken, refreshToken } = resData.data;
+
+        // Store tokens in localStorage
+        localStorage.setItem("accessToken", accessToken);
+        localStorage.setItem("refreshToken", refreshToken);
+
+        navigate("/");
+      } else {
+        setErrorMessage(resData.message || "Register failed!");
+      }
+    } catch (error) {
+      console.error("Google Auth Error:", error.message);
+      setErrorMessage(error.response?.data?.message || "Something went wrong!");
     }
   };
 
@@ -226,6 +254,7 @@ const Register = () => {
               ? "border-gray-600 text-gray-300 hover:bg-gray-700"
               : "border-gray-300 text-gray-700 hover:bg-gray-100"
           }`}
+          onClick={googleAuth}
         >
           <img
             src="https://www.svgrepo.com/show/355037/google.svg"

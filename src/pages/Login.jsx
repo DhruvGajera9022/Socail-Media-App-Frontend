@@ -80,7 +80,7 @@ const Login = () => {
       const resData = response.data;
 
       if (resData.status) {
-        const { accessToken, refreshToken, id } = resData.data;
+        const { accessToken, refreshToken } = resData.data;
 
         // Store tokens in localStorage
         localStorage.setItem("accessToken", accessToken);
