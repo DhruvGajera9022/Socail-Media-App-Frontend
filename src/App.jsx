@@ -13,6 +13,7 @@ import GoogleAuthSuccess from "./components/GoogleAuthSuccess";
 import Explore from "./pages/Explore";
 import Notifications from "./pages/Notifications";
 import Messages from "./pages/Messages";
+import Saved from "./pages/Saved";
 
 const App = () => {
   return (
@@ -31,6 +32,7 @@ const App = () => {
         <Route path="/explore" element={<Explore />} />
         <Route path="/notifications" element={<Notifications />} />
         <Route path="/messages" element={<Messages />} />
+        <Route path="/saved" element={<Saved />} />
       </Routes>
     </DarkModeProvider>
   );
