@@ -19,6 +19,7 @@ import {
   Save,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "react-hot-toast";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -41,12 +42,44 @@ const Profile = () => {
     bio: "",
     location: "",
     website: "",
-    is_private: false,
+    isPrivate: false,
   });
   const [isSaving, setIsSaving] = useState(false);
   const [editError, setEditError] = useState(null);
   const [isUploadingPicture, setIsUploadingPicture] = useState(false);
   const fileInputRef = useRef(null);
+  const modalRef = useRef(null);
+
+  // Close modal when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        setShowModal(false);
+      }
+    };
+
+    if (showModal) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showModal]);
+
+  // Close modal with Escape key
+  useEffect(() => {
+    const handleEscapeKey = (event) => {
+      if (event.key === "Escape" && showModal) {
+        setShowModal(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleEscapeKey);
+    return () => {
+      document.removeEventListener("keydown", handleEscapeKey);
+    };
+  }, [showModal]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -68,7 +101,7 @@ const Profile = () => {
             bio: data.data.bio || "",
             location: data.data.location || "",
             website: data.data.website || "",
-            is_private: data.data.is_private || false,
+            isPrivate: data.data.is_private || false,
           });
         } else {
           setError(data.message || "Failed to load profile");
@@ -91,24 +124,72 @@ const Profile = () => {
 
   const fetchModalData = async (type) => {
     try {
+      console.log(`Fetching ${type} data...`);
       const response = await fetch(`${API_BASE_URL}/profile/${type}`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
       });
 
+      console.log(`Response status: ${response.status}`);
       const result = await response.json();
+      console.log(`${type} data:`, result);
 
-      if (response.ok && result.status) {
-        setModalTitle(type === "followers" ? "followers" : "following");
-        setModalData(result.data);
+      if (response.ok) {
+        // Handle different response formats
+        let users = [];
+        
+        if (result.status && result.data) {
+          // Handle the nested format where data contains followers/following array
+          if (result.data.followers) {
+            users = result.data.followers;
+          } else if (result.data.following) {
+            users = result.data.following;
+          } else if (Array.isArray(result.data)) {
+            users = result.data;
+          } else if (typeof result.data === 'object') {
+            users = [result.data];
+          }
+        } else if (Array.isArray(result)) {
+          // If result is directly an array
+          users = result;
+        } else if (result.data && Array.isArray(result.data)) {
+          // If result has a data property that is an array
+          users = result.data;
+        } else if (result.data && typeof result.data === 'object') {
+          // If result.data is an object with user properties
+          users = [result.data];
+        } else if (typeof result === 'object') {
+          // If result is an object with user properties
+          users = [result];
+        }
+        
+        console.log(`Processed users:`, users);
+        
+        // Map the users to ensure they have the required properties
+        const formattedUsers = users.map(user => {
+          console.log(`Processing user:`, user);
+          return {
+            id: user.id || user.userId || '',
+            firstName: user.firstName || user.first_name || '',
+            lastName: user.lastName || user.last_name || '',
+            username: user.username || user.email?.split('@')[0] || '',
+            profile_picture: user.profile_picture || user.profilePicture || '',
+            isFollowing: user.isFollowing || false
+          };
+        });
+        
+        console.log(`Formatted users:`, formattedUsers);
+        setModalTitle(type === "followers" ? "Followers" : "Following");
+        setModalData(formattedUsers);
         setShowModal(true);
       } else {
-        alert(result.message || "Failed to fetch data");
+        console.error(`API error:`, result);
+        toast.error(result.message || "Failed to fetch data");
       }
     } catch (err) {
-      console.error(err);
-      alert("Something went wrong!");
+      console.error(`Error fetching ${type}:`, err);
+      toast.error("Something went wrong!");
     }
   };
 
@@ -126,7 +207,7 @@ const Profile = () => {
       bio: profile.bio || "",
       location: profile.location || "",
       website: profile.website || "",
-      is_private: profile.is_private || false,
+      isPrivate: profile.is_private || false,
     });
   };
 
@@ -151,7 +232,7 @@ const Profile = () => {
         bio: editForm.bio,
         location: editForm.location,
         website: editForm.website,
-        is_private: editForm.is_private
+        is_private: editForm.isPrivate
       };
 
       const response = await fetch(`${API_BASE_URL}/profile`, {
@@ -175,7 +256,7 @@ const Profile = () => {
           bio: editForm.bio,
           location: editForm.location,
           website: editForm.website,
-          is_private: editForm.is_private,
+          is_private: editForm.isPrivate,
         }));
         setIsEditing(false);
       } else {
@@ -269,6 +350,54 @@ const Profile = () => {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
+    }
+  };
+
+  // Add this new function to handle following/unfollowing users
+  const handleFollowUser = async (userId, isFollowing) => {
+    try {
+      const endpoint = isFollowing 
+        ? `${API_BASE_URL}/profile/${userId}/unfollow`
+        : `${API_BASE_URL}/profile/${userId}/follow`;
+      
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.status) {
+        // Update the user in the modal data
+        setModalData(prevData => 
+          prevData.map(user => 
+            user.id === userId 
+              ? { ...user, isFollowing: !isFollowing } 
+              : user
+          )
+        );
+        
+        // Update the profile counts
+        setProfile(prevProfile => ({
+          ...prevProfile,
+          _count: {
+            ...prevProfile._count,
+            followers: isFollowing 
+              ? prevProfile._count.followers - 1 
+              : prevProfile._count.followers + 1
+          }
+        }));
+        
+        toast.success(isFollowing ? "User unfollowed" : "User followed");
+      } else {
+        toast.error(result.message || "Action failed");
+      }
+    } catch (err) {
+      console.error("Error following/unfollowing user:", err);
+      toast.error("Something went wrong!");
     }
   };
 
@@ -536,9 +665,9 @@ const Profile = () => {
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
-                        name="is_private"
-                        checked={editForm.is_private}
-                        onChange={(e) => setEditForm(prev => ({ ...prev, is_private: e.target.checked }))}
+                        name="isPrivate"
+                        checked={editForm.isPrivate}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, isPrivate: e.target.checked }))}
                         className="sr-only peer"
                       />
                       <div className={`w-11 h-6 rounded-full peer ${
@@ -554,7 +683,7 @@ const Profile = () => {
                       <span className={`ml-3 text-sm font-medium ${
                         isDarkMode ? "text-gray-300" : "text-gray-900"
                       }`}>
-                        {editForm.is_private ? "Private" : "Public"}
+                        {editForm.isPrivate ? "Private" : "Public"}
                       </span>
                     </label>
                   </div>
@@ -605,6 +734,7 @@ const Profile = () => {
             className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
           >
             <motion.div
+              ref={modalRef}
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
@@ -612,16 +742,23 @@ const Profile = () => {
                 isDarkMode ? "bg-gray-800" : "bg-white"
               } rounded-xl shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden`}
             >
-              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
                 <h3
                   className={`text-xl font-semibold ${
                     isDarkMode ? "text-white" : "text-gray-900"
                   }`}
                 >
-                  {modalTitle.charAt(0).toUpperCase() + modalTitle.slice(1)}
+                  {modalTitle}
                 </h3>
+                <button 
+                  onClick={() => setShowModal(false)}
+                  className={`p-1 rounded-full ${
+                    isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
+                  }`}
+                >
+                  <X size={20} className={isDarkMode ? "text-gray-300" : "text-gray-500"} />
+                </button>
               </div>
-
               <div className="p-6 overflow-y-auto max-h-[60vh]">
                 {modalData.length === 0 ? (
                   <div className="text-center py-8">
@@ -635,7 +772,7 @@ const Profile = () => {
                         isDarkMode ? "text-gray-300" : "text-gray-500"
                       }`}
                     >
-                      No users found.
+                      No {modalTitle.toLowerCase()} found.
                     </p>
                   </div>
                 ) : (
@@ -651,6 +788,9 @@ const Profile = () => {
                           src={user.profile_picture || "/api/placeholder/50/50"}
                           alt={user.firstName}
                           className="w-12 h-12 rounded-full object-cover border-2 border-blue-500"
+                          onError={(e) => {
+                            e.target.src = "/api/placeholder/50/50";
+                          }}
                         />
                         <div className="flex-1">
                           <div className="flex items-center justify-between">
@@ -667,11 +807,16 @@ const Profile = () => {
                                   isDarkMode ? "text-gray-400" : "text-gray-500"
                                 }`}
                               >
-                                @{user.username || user.email.split("@")[0]}
+                                @{user.username}
                               </p>
                             </div>
-                            <button className="text-blue-500 hover:text-blue-600 transition-colors">
-                              <UserPlus size={20} />
+                            <button 
+                              className={`text-blue-500 hover:text-blue-600 transition-colors ${
+                                user.isFollowing ? "text-green-500 hover:text-green-600" : ""
+                              }`}
+                              onClick={() => handleFollowUser(user.id, user.isFollowing)}
+                            >
+                              {user.isFollowing ? <UserMinus size={20} /> : <UserPlus size={20} />}
                             </button>
                           </div>
                         </div>
@@ -679,19 +824,6 @@ const Profile = () => {
                     ))}
                   </ul>
                 )}
-              </div>
-
-              <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-                <button
-                  onClick={() => setShowModal(false)}
-                  className={`w-full py-2 px-4 rounded-lg font-medium transition-colors ${
-                    isDarkMode
-                      ? "bg-gray-700 hover:bg-gray-600 text-white"
-                      : "bg-gray-100 hover:bg-gray-200 text-gray-800"
-                  }`}
-                >
-                  Close
-                </button>
               </div>
             </motion.div>
           </motion.div>
