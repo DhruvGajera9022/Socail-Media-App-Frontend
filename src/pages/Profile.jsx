@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "react-hot-toast";
+import { useNavigate } from "react-router-dom";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -29,6 +30,7 @@ const Profile = () => {
   const [error, setError] = useState(null);
   const accessToken = localStorage.getItem("accessToken");
   const { isDarkMode, toggleDarkMode } = useDarkMode();
+  const navigate = useNavigate();
 
   const [modalTitle, setModalTitle] = useState("");
   const [modalData, setModalData] = useState([]);
@@ -821,7 +823,11 @@ const Profile = () => {
                         <img
                           src={user.profile_picture || "/api/placeholder/50/50"}
                           alt={user.firstName}
-                          className="w-12 h-12 rounded-full object-cover border-2 border-blue-500"
+                          className="w-12 h-12 rounded-full object-cover border-2 border-blue-500 cursor-pointer hover:opacity-80 transition-opacity"
+                          onClick={() => {
+                            setShowModal(false);
+                            navigate(`/user/${user.id}`);
+                          }}
                           onError={(e) => {
                             e.target.src = "/api/placeholder/50/50";
                           }}

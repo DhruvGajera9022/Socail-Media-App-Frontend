@@ -11,6 +11,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -25,6 +26,7 @@ const Search = () => {
   const [activeFilter, setActiveFilter] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
   const searchInputRef = useRef(null);
+  const navigate = useNavigate();
 
   // Load recent searches from localStorage on component mount
   useEffect(() => {
@@ -426,7 +428,8 @@ const Search = () => {
                           <img
                             src={user.profile_picture || "/default-avatar.png"}
                             alt={`${user.firstName} ${user.lastName}`}
-                            className="w-14 h-14 rounded-full object-cover border-2 border-blue-500"
+                            className="w-14 h-14 rounded-full object-cover border-2 border-blue-500 cursor-pointer hover:opacity-80 transition-opacity"
+                            onClick={() => navigate(`/user/${user.id}`)}
                           />
                           {user.isFollowing && (
                             <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full p-1">
