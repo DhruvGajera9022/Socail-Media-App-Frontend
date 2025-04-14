@@ -125,7 +125,18 @@ const Profile = () => {
   const fetchModalData = async (type) => {
     try {
       console.log(`Fetching ${type} data...`);
-      const response = await fetch(`${API_BASE_URL}/profile/${type}`, {
+
+      // Determine the correct API endpoint based on the type
+      let endpoint = "";
+      if (type === "followers") {
+        endpoint = `${API_BASE_URL}/profile/followers`;
+      } else if (type === "following") {
+        endpoint = `${API_BASE_URL}/profile/following`;
+      } else {
+        throw new Error(`Invalid type: ${type}`);
+      }
+
+      const response = await fetch(endpoint, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
@@ -138,7 +149,7 @@ const Profile = () => {
       if (response.ok) {
         // Handle different response formats
         let users = [];
-        
+
         if (result.status && result.data) {
           // Handle the nested format where data contains followers/following array
           if (result.data.followers) {
@@ -147,7 +158,7 @@ const Profile = () => {
             users = result.data.following;
           } else if (Array.isArray(result.data)) {
             users = result.data;
-          } else if (typeof result.data === 'object') {
+          } else if (typeof result.data === "object") {
             users = [result.data];
           }
         } else if (Array.isArray(result)) {
@@ -156,29 +167,29 @@ const Profile = () => {
         } else if (result.data && Array.isArray(result.data)) {
           // If result has a data property that is an array
           users = result.data;
-        } else if (result.data && typeof result.data === 'object') {
+        } else if (result.data && typeof result.data === "object") {
           // If result.data is an object with user properties
           users = [result.data];
-        } else if (typeof result === 'object') {
+        } else if (typeof result === "object") {
           // If result is an object with user properties
           users = [result];
         }
-        
+
         console.log(`Processed users:`, users);
-        
+
         // Map the users to ensure they have the required properties
-        const formattedUsers = users.map(user => {
+        const formattedUsers = users.map((user) => {
           console.log(`Processing user:`, user);
           return {
-            id: user.id || user.userId || '',
-            firstName: user.firstName || user.first_name || '',
-            lastName: user.lastName || user.last_name || '',
-            username: user.username || user.email?.split('@')[0] || '',
-            profile_picture: user.profile_picture || user.profilePicture || '',
-            isFollowing: user.isFollowing || false
+            id: user.id || user.userId || "",
+            firstName: user.firstName || user.first_name || "",
+            lastName: user.lastName || user.last_name || "",
+            username: user.username || user.email?.split("@")[0] || "",
+            profile_picture: user.profile_picture || user.profilePicture || "",
+            isFollowing: user.isFollowing || false,
           };
         });
-        
+
         console.log(`Formatted users:`, formattedUsers);
         setModalTitle(type === "followers" ? "Followers" : "Following");
         setModalData(formattedUsers);
@@ -232,7 +243,7 @@ const Profile = () => {
         bio: editForm.bio,
         location: editForm.location,
         website: editForm.website,
-        is_private: editForm.isPrivate
+        is_private: editForm.isPrivate,
       };
 
       const response = await fetch(`${API_BASE_URL}/profile`, {
@@ -356,10 +367,14 @@ const Profile = () => {
   // Add this new function to handle following/unfollowing users
   const handleFollowUser = async (userId, isFollowing) => {
     try {
-      const endpoint = isFollowing 
+      const endpoint = isFollowing
         ? `${API_BASE_URL}/profile/${userId}/unfollow`
         : `${API_BASE_URL}/profile/${userId}/follow`;
-      
+
+      console.log(
+        `Calling ${isFollowing ? "unfollow" : "follow"} API for user ${userId}`
+      );
+
       const response = await fetch(endpoint, {
         method: "POST",
         headers: {
@@ -369,28 +384,27 @@ const Profile = () => {
       });
 
       const result = await response.json();
+      console.log(`Follow/unfollow response:`, result);
 
       if (response.ok && result.status) {
         // Update the user in the modal data
-        setModalData(prevData => 
-          prevData.map(user => 
-            user.id === userId 
-              ? { ...user, isFollowing: !isFollowing } 
-              : user
+        setModalData((prevData) =>
+          prevData.map((user) =>
+            user.id === userId ? { ...user, isFollowing: !isFollowing } : user
           )
         );
-        
+
         // Update the profile counts
-        setProfile(prevProfile => ({
+        setProfile((prevProfile) => ({
           ...prevProfile,
           _count: {
             ...prevProfile._count,
-            followers: isFollowing 
-              ? prevProfile._count.followers - 1 
-              : prevProfile._count.followers + 1
-          }
+            followers: isFollowing
+              ? prevProfile._count.followers - 1
+              : prevProfile._count.followers + 1,
+          },
         }));
-        
+
         toast.success(isFollowing ? "User unfollowed" : "User followed");
       } else {
         toast.error(result.message || "Action failed");
@@ -655,11 +669,20 @@ const Profile = () => {
 
                   <div className="flex items-center justify-between p-4 border rounded-lg">
                     <div>
-                      <h3 className={`font-medium ${isDarkMode ? "text-white" : "text-gray-900"}`}>
+                      <h3
+                        className={`font-medium ${
+                          isDarkMode ? "text-white" : "text-gray-900"
+                        }`}
+                      >
                         Private Account
                       </h3>
-                      <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
-                        When your account is private, only approved followers can see your posts
+                      <p
+                        className={`text-sm ${
+                          isDarkMode ? "text-gray-400" : "text-gray-500"
+                        }`}
+                      >
+                        When your account is private, only approved followers
+                        can see your posts
                       </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -667,22 +690,30 @@ const Profile = () => {
                         type="checkbox"
                         name="isPrivate"
                         checked={editForm.isPrivate}
-                        onChange={(e) => setEditForm(prev => ({ ...prev, isPrivate: e.target.checked }))}
+                        onChange={(e) =>
+                          setEditForm((prev) => ({
+                            ...prev,
+                            isPrivate: e.target.checked,
+                          }))
+                        }
                         className="sr-only peer"
                       />
-                      <div className={`w-11 h-6 rounded-full peer ${
-                        isDarkMode 
-                          ? "bg-gray-700 peer-checked:bg-blue-500" 
-                          : "bg-gray-200 peer-checked:bg-blue-600"
-                      } peer-focus:outline-none peer-focus:ring-4 ${
-                        isDarkMode 
-                          ? "peer-focus:ring-blue-800" 
-                          : "peer-focus:ring-blue-300"
-                      }`}>
-                      </div>
-                      <span className={`ml-3 text-sm font-medium ${
-                        isDarkMode ? "text-gray-300" : "text-gray-900"
-                      }`}>
+                      <div
+                        className={`w-11 h-6 rounded-full peer ${
+                          isDarkMode
+                            ? "bg-gray-700 peer-checked:bg-blue-500"
+                            : "bg-gray-200 peer-checked:bg-blue-600"
+                        } peer-focus:outline-none peer-focus:ring-4 ${
+                          isDarkMode
+                            ? "peer-focus:ring-blue-800"
+                            : "peer-focus:ring-blue-300"
+                        }`}
+                      ></div>
+                      <span
+                        className={`ml-3 text-sm font-medium ${
+                          isDarkMode ? "text-gray-300" : "text-gray-900"
+                        }`}
+                      >
                         {editForm.isPrivate ? "Private" : "Public"}
                       </span>
                     </label>
@@ -750,13 +781,16 @@ const Profile = () => {
                 >
                   {modalTitle}
                 </h3>
-                <button 
+                <button
                   onClick={() => setShowModal(false)}
                   className={`p-1 rounded-full ${
                     isDarkMode ? "hover:bg-gray-700" : "hover:bg-gray-100"
                   }`}
                 >
-                  <X size={20} className={isDarkMode ? "text-gray-300" : "text-gray-500"} />
+                  <X
+                    size={20}
+                    className={isDarkMode ? "text-gray-300" : "text-gray-500"}
+                  />
                 </button>
               </div>
               <div className="p-6 overflow-y-auto max-h-[60vh]">
@@ -810,13 +844,21 @@ const Profile = () => {
                                 @{user.username}
                               </p>
                             </div>
-                            <button 
+                            <button
                               className={`text-blue-500 hover:text-blue-600 transition-colors ${
-                                user.isFollowing ? "text-green-500 hover:text-green-600" : ""
+                                user.isFollowing
+                                  ? "text-green-500 hover:text-green-600"
+                                  : ""
                               }`}
-                              onClick={() => handleFollowUser(user.id, user.isFollowing)}
+                              onClick={() =>
+                                handleFollowUser(user.id, user.isFollowing)
+                              }
                             >
-                              {user.isFollowing ? <UserMinus size={20} /> : <UserPlus size={20} />}
+                              {user.isFollowing ? (
+                                <UserMinus size={20} />
+                              ) : (
+                                <UserPlus size={20} />
+                              )}
                             </button>
                           </div>
                         </div>
