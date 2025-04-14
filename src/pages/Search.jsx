@@ -1,7 +1,15 @@
 import React, { useState, useEffect, useRef } from "react";
 import Navbar from "../components/Navbar";
 import { useDarkMode } from "../context/DarkModeProvider";
-import { Search as SearchIcon, X, UserPlus, UserMinus, Clock, Filter, Loader2 } from "lucide-react";
+import {
+  Search as SearchIcon,
+  X,
+  UserPlus,
+  UserMinus,
+  Clock,
+  Filter,
+  Loader2,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -55,7 +63,7 @@ const Search = () => {
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
-    
+
     setIsSearching(true);
     setError(null);
     const accessToken = localStorage.getItem("accessToken");
@@ -76,10 +84,10 @@ const Search = () => {
 
       const data = await response.json();
       setSearchResults(data.data.users || []);
-      
+
       // Add to recent searches if not already there
       if (!recentSearches.includes(searchQuery)) {
-        setRecentSearches(prev => [searchQuery, ...prev].slice(0, 5));
+        setRecentSearches((prev) => [searchQuery, ...prev].slice(0, 5));
       }
     } catch (err) {
       setError(err.message);
@@ -151,7 +159,7 @@ const Search = () => {
 
   const removeRecentSearch = (search, e) => {
     e.stopPropagation();
-    setRecentSearches(prev => prev.filter(s => s !== search));
+    setRecentSearches((prev) => prev.filter((s) => s !== search));
   };
 
   const useRecentSearch = (search) => {
@@ -165,8 +173,10 @@ const Search = () => {
 
   const filteredResults = () => {
     if (activeFilter === "all") return searchResults;
-    if (activeFilter === "following") return searchResults.filter(user => user.isFollowing);
-    if (activeFilter === "not-following") return searchResults.filter(user => !user.isFollowing);
+    if (activeFilter === "following")
+      return searchResults.filter((user) => user.isFollowing);
+    if (activeFilter === "not-following")
+      return searchResults.filter((user) => !user.isFollowing);
     return searchResults;
   };
 
@@ -193,9 +203,11 @@ const Search = () => {
 
             <div className="relative mb-8">
               <div className="relative flex items-center">
-                <SearchIcon 
-                  className={`absolute left-4 ${isDarkMode ? "text-gray-400" : "text-gray-500"}`} 
-                  size={20} 
+                <SearchIcon
+                  className={`absolute left-4 ${
+                    isDarkMode ? "text-gray-400" : "text-gray-500"
+                  }`}
+                  size={20}
                 />
                 <input
                   ref={searchInputRef}
@@ -213,13 +225,15 @@ const Search = () => {
                 {searchQuery && (
                   <button
                     onClick={clearSearch}
-                    className={`absolute right-4 ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}
+                    className={`absolute right-4 ${
+                      isDarkMode ? "text-gray-400" : "text-gray-500"
+                    }`}
                   >
                     <X size={20} />
                   </button>
                 )}
               </div>
-              
+
               <div className="flex justify-between items-center mt-4">
                 <button
                   onClick={() => setShowFilters(!showFilters)}
@@ -232,14 +246,18 @@ const Search = () => {
                   <Filter size={16} />
                   <span>Filters</span>
                 </button>
-                
+
                 {searchQuery && (
-                  <span className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
+                  <span
+                    className={`text-sm ${
+                      isDarkMode ? "text-gray-400" : "text-gray-500"
+                    }`}
+                  >
                     {filteredResults().length} results
                   </span>
                 )}
               </div>
-              
+
               <AnimatePresence>
                 {showFilters && (
                   <motion.div
@@ -297,7 +315,11 @@ const Search = () => {
             {isSearching && (
               <div className="flex justify-center items-center py-12">
                 <Loader2 className="animate-spin text-blue-500" size={32} />
-                <span className={`ml-3 ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
+                <span
+                  className={`ml-3 ${
+                    isDarkMode ? "text-gray-300" : "text-gray-700"
+                  }`}
+                >
                   Searching...
                 </span>
               </div>
@@ -320,12 +342,18 @@ const Search = () => {
                 className="mb-8"
               >
                 <div className="flex justify-between items-center mb-3">
-                  <h2 className={`text-lg font-semibold ${isDarkMode ? "text-gray-300" : "text-gray-700"}`}>
+                  <h2
+                    className={`text-lg font-semibold ${
+                      isDarkMode ? "text-gray-300" : "text-gray-700"
+                    }`}
+                  >
                     Recent Searches
                   </h2>
                   <button
                     onClick={clearAllRecentSearches}
-                    className={`text-sm ${isDarkMode ? "text-blue-400" : "text-blue-600"} hover:underline`}
+                    className={`text-sm ${
+                      isDarkMode ? "text-blue-400" : "text-blue-600"
+                    } hover:underline`}
                   >
                     Clear All
                   </button>
@@ -345,14 +373,25 @@ const Search = () => {
                       } shadow-sm`}
                     >
                       <div className="flex items-center gap-3">
-                        <Clock size={16} className={isDarkMode ? "text-gray-400" : "text-gray-500"} />
-                        <span className={isDarkMode ? "text-gray-300" : "text-gray-700"}>
+                        <Clock
+                          size={16}
+                          className={
+                            isDarkMode ? "text-gray-400" : "text-gray-500"
+                          }
+                        />
+                        <span
+                          className={
+                            isDarkMode ? "text-gray-300" : "text-gray-700"
+                          }
+                        >
                           {search}
                         </span>
                       </div>
                       <button
                         onClick={(e) => removeRecentSearch(search, e)}
-                        className={isDarkMode ? "text-gray-400" : "text-gray-500"}
+                        className={
+                          isDarkMode ? "text-gray-400" : "text-gray-500"
+                        }
                       >
                         <X size={16} />
                       </button>
@@ -405,15 +444,33 @@ const Search = () => {
                               ),
                             }}
                           ></h3>
-                          <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
+                          <p
+                            className={`text-sm ${
+                              isDarkMode ? "text-gray-400" : "text-gray-500"
+                            }`}
+                          >
                             @{user.username || user.email.split("@")[0]}
                           </p>
                           <div className="flex gap-4 mt-1">
-                            <span className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
-                              <span className="font-medium">{user._count.followers}</span> followers
+                            <span
+                              className={`text-sm ${
+                                isDarkMode ? "text-gray-400" : "text-gray-500"
+                              }`}
+                            >
+                              <span className="font-medium">
+                                {user._count.following}
+                              </span>{" "}
+                              followers
                             </span>
-                            <span className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
-                              <span className="font-medium">{user._count.following}</span> following
+                            <span
+                              className={`text-sm ${
+                                isDarkMode ? "text-gray-400" : "text-gray-500"
+                              }`}
+                            >
+                              <span className="font-medium">
+                                {user._count.followers}
+                              </span>{" "}
+                              following
                             </span>
                           </div>
                         </div>
@@ -455,18 +512,31 @@ const Search = () => {
                 animate={{ opacity: 1 }}
                 className="text-center py-12"
               >
-                <div className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
-                  isDarkMode ? "bg-gray-800" : "bg-gray-100"
-                }`}>
-                  <SearchIcon size={32} className={isDarkMode ? "text-gray-400" : "text-gray-500"} />
+                <div
+                  className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
+                    isDarkMode ? "bg-gray-800" : "bg-gray-100"
+                  }`}
+                >
+                  <SearchIcon
+                    size={32}
+                    className={isDarkMode ? "text-gray-400" : "text-gray-500"}
+                  />
                 </div>
-                <p className={`${isDarkMode ? "text-gray-400" : "text-gray-500"} text-lg`}>
+                <p
+                  className={`${
+                    isDarkMode ? "text-gray-400" : "text-gray-500"
+                  } text-lg`}
+                >
                   No users found matching{" "}
                   <strong className="text-blue-600 dark:text-blue-400">
                     "{searchQuery}"
                   </strong>
                 </p>
-                <p className={`mt-2 ${isDarkMode ? "text-gray-500" : "text-gray-400"} text-sm`}>
+                <p
+                  className={`mt-2 ${
+                    isDarkMode ? "text-gray-500" : "text-gray-400"
+                  } text-sm`}
+                >
                   Try different keywords or check your spelling
                 </p>
               </motion.div>
