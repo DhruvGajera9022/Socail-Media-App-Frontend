@@ -207,7 +207,7 @@ const Notifications = () => {
                         {user.firstName} {user.lastName}
                       </h3>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        Wants to follow you
+                        @{user.username || user.email.split("@")[0]} wants to follow you
                       </p>
                     </div>
                     <div className="flex gap-2">

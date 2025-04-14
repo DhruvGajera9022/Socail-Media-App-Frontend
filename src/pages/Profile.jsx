@@ -41,6 +41,7 @@ const Profile = () => {
     bio: "",
     location: "",
     website: "",
+    is_private: false,
   });
   const [isSaving, setIsSaving] = useState(false);
   const [editError, setEditError] = useState(null);
@@ -67,6 +68,7 @@ const Profile = () => {
             bio: data.data.bio || "",
             location: data.data.location || "",
             website: data.data.website || "",
+            is_private: data.data.is_private || false,
           });
         } else {
           setError(data.message || "Failed to load profile");
@@ -124,6 +126,7 @@ const Profile = () => {
       bio: profile.bio || "",
       location: profile.location || "",
       website: profile.website || "",
+      is_private: profile.is_private || false,
     });
   };
 
@@ -140,13 +143,24 @@ const Profile = () => {
     setEditError(null);
 
     try {
+      // Create a clean profile data object with all fields
+      const profileData = {
+        firstName: editForm.firstName,
+        lastName: editForm.lastName,
+        username: editForm.username,
+        bio: editForm.bio,
+        location: editForm.location,
+        website: editForm.website,
+        is_private: editForm.is_private
+      };
+
       const response = await fetch(`${API_BASE_URL}/profile`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify(editForm),
+        body: JSON.stringify(profileData),
       });
 
       const data = await response.json();
@@ -161,6 +175,7 @@ const Profile = () => {
           bio: editForm.bio,
           location: editForm.location,
           website: editForm.website,
+          is_private: editForm.is_private,
         }));
         setIsEditing(false);
       } else {
@@ -507,6 +522,41 @@ const Profile = () => {
                           : "bg-white border-gray-300 text-gray-900"
                       } focus:outline-none focus:ring-2 focus:ring-blue-500`}
                     />
+                  </div>
+
+                  <div className="flex items-center justify-between p-4 border rounded-lg">
+                    <div>
+                      <h3 className={`font-medium ${isDarkMode ? "text-white" : "text-gray-900"}`}>
+                        Private Account
+                      </h3>
+                      <p className={`text-sm ${isDarkMode ? "text-gray-400" : "text-gray-500"}`}>
+                        When your account is private, only approved followers can see your posts
+                      </p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        name="is_private"
+                        checked={editForm.is_private}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, is_private: e.target.checked }))}
+                        className="sr-only peer"
+                      />
+                      <div className={`w-11 h-6 rounded-full peer ${
+                        isDarkMode 
+                          ? "bg-gray-700 peer-checked:bg-blue-500" 
+                          : "bg-gray-200 peer-checked:bg-blue-600"
+                      } peer-focus:outline-none peer-focus:ring-4 ${
+                        isDarkMode 
+                          ? "peer-focus:ring-blue-800" 
+                          : "peer-focus:ring-blue-300"
+                      }`}>
+                      </div>
+                      <span className={`ml-3 text-sm font-medium ${
+                        isDarkMode ? "text-gray-300" : "text-gray-900"
+                      }`}>
+                        {editForm.is_private ? "Private" : "Public"}
+                      </span>
+                    </label>
                   </div>
                 </div>
               </div>
