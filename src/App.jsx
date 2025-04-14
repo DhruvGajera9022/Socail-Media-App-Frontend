@@ -15,6 +15,7 @@ import Notifications from "./pages/Notifications";
 import Messages from "./pages/Messages";
 import Saved from "./pages/Saved";
 import UserProfile from "./pages/UserProfile";
+import NotFound from "./pages/NotFound";
 
 const App = () => {
   return (
@@ -35,6 +36,9 @@ const App = () => {
         <Route path="/messages" element={<Messages />} />
         <Route path="/saved" element={<Saved />} />
         <Route path="/user/:userId" element={<UserProfile />} />
+        
+        {/* Catch-all route for 404 Not Found */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </DarkModeProvider>
   );

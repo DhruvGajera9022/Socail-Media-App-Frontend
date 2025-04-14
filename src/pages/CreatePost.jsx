@@ -56,6 +56,11 @@ const CreatePost = () => {
     }
   }, [accessToken, navigate]);
 
+  // Set draft mode based on dark mode
+  useEffect(() => {
+    setIsDraft(isDarkMode);
+  }, [isDarkMode]);
+
   // Handle responsive design
   useEffect(() => {
     const handleResize = () => {
@@ -176,6 +181,7 @@ const CreatePost = () => {
       formData.append("title", title);
       formData.append("content", content);
       formData.append("isDraft", isDraft);
+      formData.append("status", isDraft ? "DRAFT" : "PUBLISHED");
 
       // Append each image to formData
       images.forEach((image) => {
