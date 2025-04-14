@@ -189,25 +189,25 @@ const Profile = () => {
     if (!file) return;
 
     // Validate file type
-    if (!file.type.startsWith('image/')) {
-      alert('Please select an image file');
+    if (!file.type.startsWith("image/")) {
+      alert("Please select an image file");
       return;
     }
 
     // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('Image size should be less than 5MB');
+      alert("Image size should be less than 5MB");
       return;
     }
 
     setIsUploadingPicture(true);
     const formData = new FormData();
-    formData.append('profile_picture', file);
+    formData.append("profile_picture", file);
 
     try {
       // Create a temporary URL for immediate display
       const imageUrl = URL.createObjectURL(file);
-      
+
       // Update the profile picture immediately for better UX
       const profileImage = document.querySelector('img[alt="Profile"]');
       if (profileImage) {
@@ -215,7 +215,7 @@ const Profile = () => {
       }
 
       const response = await fetch(`${API_BASE_URL}/profile/profile-picture`, {
-        method: 'PUT',
+        method: "PUT",
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
@@ -226,7 +226,7 @@ const Profile = () => {
 
       if (response.ok && data.status) {
         // Update the profile state with the new profile picture URL
-        setProfile(prevProfile => {
+        setProfile((prevProfile) => {
           if (!prevProfile) return null;
           return {
             ...prevProfile,
@@ -238,21 +238,21 @@ const Profile = () => {
         if (profileImage && profile.profile_picture) {
           profileImage.src = profile.profile_picture;
         }
-        alert(data.message || 'Failed to update profile picture');
+        alert(data.message || "Failed to update profile picture");
       }
     } catch (error) {
-      console.error('Error updating profile picture:', error);
+      console.error("Error updating profile picture:", error);
       // If there's an error, revert to the original image
       const profileImage = document.querySelector('img[alt="Profile"]');
       if (profileImage && profile.profile_picture) {
         profileImage.src = profile.profile_picture;
       }
-      alert('Failed to update profile picture. Please try again.');
+      alert("Failed to update profile picture. Please try again.");
     } finally {
       setIsUploadingPicture(false);
       // Reset file input
       if (fileInputRef.current) {
-        fileInputRef.current.value = '';
+        fileInputRef.current.value = "";
       }
     }
   };
@@ -723,7 +723,7 @@ const Profile = () => {
                 <div className="flex justify-center gap-8 mt-6">
                   <motion.div
                     whileHover={{ scale: 1.05 }}
-                    onClick={() => fetchModalData("followers")}
+                    onClick={() => fetchModalData("following")}
                     className="cursor-pointer text-center"
                   >
                     <span
@@ -738,12 +738,12 @@ const Profile = () => {
                         isDarkMode ? "text-gray-400" : "text-gray-500"
                       }`}
                     >
-                      Followers
+                      Following
                     </p>
                   </motion.div>
                   <motion.div
                     whileHover={{ scale: 1.05 }}
-                    onClick={() => fetchModalData("following")}
+                    onClick={() => fetchModalData("followers")}
                     className="cursor-pointer text-center"
                   >
                     <span
@@ -758,7 +758,7 @@ const Profile = () => {
                         isDarkMode ? "text-gray-400" : "text-gray-500"
                       }`}
                     >
-                      Following
+                      Followers
                     </p>
                   </motion.div>
                   <div className="text-center">
