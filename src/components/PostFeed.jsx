@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Heart,
   MessageCircle,
@@ -12,37 +12,92 @@ import {
   Link as LinkIcon,
   Globe,
   Clock,
+  Loader2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const POSTS_PER_PAGE = 10;
 
 // Main Post Feed Component
 const PostFeed = ({ isDarkMode }) => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState(null);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const observer = useRef(null);
+  const lastPostElementRef = useRef(null);
 
-  useEffect(() => {
-    const fetchPosts = async () => {
-      try {
+  // Function to fetch posts with pagination
+  const fetchPosts = async (pageNum) => {
+    try {
+      if (pageNum === 1) {
         setLoading(true);
-        const response = await fetch(`${API_BASE_URL}/post`);
-        if (!response.ok) {
-          throw new Error("Failed to fetch posts");
-        }
-        const data = await response.json();
-        const uniquePosts = removeDuplicatePosts(data.data);
-        setPosts(uniquePosts);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+      } else {
+        setLoadingMore(true);
       }
+      
+      const response = await fetch(`${API_BASE_URL}/post?page=${pageNum}&limit=${POSTS_PER_PAGE}`);
+      if (!response.ok) {
+        throw new Error("Failed to fetch posts");
+      }
+      const data = await response.json();
+      
+      // Check if we have more posts to load
+      if (data.data.length < POSTS_PER_PAGE) {
+        setHasMore(false);
+      }
+      
+      // Remove duplicates and append new posts
+      const newPosts = removeDuplicatePosts(data.data);
+      if (pageNum === 1) {
+        setPosts(newPosts);
+      } else {
+        setPosts(prevPosts => [...prevPosts, ...newPosts]);
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  // Initial load
+  useEffect(() => {
+    fetchPosts(1);
+  }, []);
+
+  // Intersection Observer for infinite scrolling
+  useEffect(() => {
+    const options = {
+      root: null,
+      rootMargin: "20px",
+      threshold: 0.1
     };
 
-    fetchPosts();
-  }, []);
+    observer.current = new IntersectionObserver(handleObserver, options);
+
+    if (lastPostElementRef.current) {
+      observer.current.observe(lastPostElementRef.current);
+    }
+
+    return () => {
+      if (observer.current) {
+        observer.current.disconnect();
+      }
+    };
+  }, [posts, hasMore]);
+
+  const handleObserver = (entries) => {
+    const target = entries[0];
+    if (target.isIntersecting && hasMore && !loading && !loadingMore) {
+      setPage(prevPage => prevPage + 1);
+      fetchPosts(page + 1);
+    }
+  };
 
   const removeDuplicatePosts = (postsArray) => {
     const map = new Map();
@@ -106,10 +161,34 @@ const PostFeed = ({ isDarkMode }) => {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.1 }}
+                ref={index === posts.length - 1 ? lastPostElementRef : null}
               >
                 <Post post={post} isDarkMode={isDarkMode} />
               </motion.div>
             ))}
+            
+            {/* Loading indicator for more posts */}
+            {loadingMore && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex justify-center items-center py-6"
+              >
+                <Loader2 className="w-6 h-6 animate-spin text-blue-500 mr-2" />
+                <span className="text-gray-500 dark:text-gray-400">Loading more posts...</span>
+              </motion.div>
+            )}
+            
+            {/* No more posts indicator */}
+            {!hasMore && posts.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center py-6 text-gray-500 dark:text-gray-400"
+              >
+                No more posts to load
+              </motion.div>
+            )}
           </motion.div>
         ))}
     </div>
