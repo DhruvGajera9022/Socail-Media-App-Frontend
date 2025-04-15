@@ -13,6 +13,9 @@ import {
   Globe,
   Clock,
   Loader2,
+  Play,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -38,24 +41,26 @@ const PostFeed = ({ isDarkMode }) => {
       } else {
         setLoadingMore(true);
       }
-      
-      const response = await fetch(`${API_BASE_URL}/post?page=${pageNum}&limit=${POSTS_PER_PAGE}`);
+
+      const response = await fetch(
+        `${API_BASE_URL}/post?page=${pageNum}&limit=${POSTS_PER_PAGE}`
+      );
       if (!response.ok) {
         throw new Error("Failed to fetch posts");
       }
       const data = await response.json();
-      
+
       // Check if we have more posts to load
       if (data.data.length < POSTS_PER_PAGE) {
         setHasMore(false);
       }
-      
+
       // Remove duplicates and append new posts
       const newPosts = removeDuplicatePosts(data.data);
       if (pageNum === 1) {
         setPosts(newPosts);
       } else {
-        setPosts(prevPosts => [...prevPosts, ...newPosts]);
+        setPosts((prevPosts) => [...prevPosts, ...newPosts]);
       }
     } catch (err) {
       setError(err.message);
@@ -75,7 +80,7 @@ const PostFeed = ({ isDarkMode }) => {
     const options = {
       root: null,
       rootMargin: "20px",
-      threshold: 0.1
+      threshold: 0.1,
     };
 
     observer.current = new IntersectionObserver(handleObserver, options);
@@ -94,7 +99,7 @@ const PostFeed = ({ isDarkMode }) => {
   const handleObserver = (entries) => {
     const target = entries[0];
     if (target.isIntersecting && hasMore && !loading && !loadingMore) {
-      setPage(prevPage => prevPage + 1);
+      setPage((prevPage) => prevPage + 1);
       fetchPosts(page + 1);
     }
   };
@@ -143,7 +148,9 @@ const PostFeed = ({ isDarkMode }) => {
           >
             <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-8 max-w-md mx-auto">
               <ImageIcon className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">No posts available</p>
+              <p className="text-gray-500 dark:text-gray-400">
+                No posts available
+              </p>
               <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
                 Be the first to share something with your network!
               </p>
@@ -166,7 +173,7 @@ const PostFeed = ({ isDarkMode }) => {
                 <Post post={post} isDarkMode={isDarkMode} />
               </motion.div>
             ))}
-            
+
             {/* Loading indicator for more posts */}
             {loadingMore && (
               <motion.div
@@ -175,10 +182,12 @@ const PostFeed = ({ isDarkMode }) => {
                 className="flex justify-center items-center py-6"
               >
                 <Loader2 className="w-6 h-6 animate-spin text-blue-500 mr-2" />
-                <span className="text-gray-500 dark:text-gray-400">Loading more posts...</span>
+                <span className="text-gray-500 dark:text-gray-400">
+                  Loading more posts...
+                </span>
               </motion.div>
             )}
-            
+
             {/* No more posts indicator */}
             {!hasMore && posts.length > 0 && (
               <motion.div
@@ -195,6 +204,123 @@ const PostFeed = ({ isDarkMode }) => {
   );
 };
 
+// Helper function to check if a URL is a video
+const isVideoUrl = (url) => {
+  if (!url) return false;
+  const videoExtensions = [".mp4", ".webm", ".ogg", ".mov", ".avi", ".mkv"];
+  return videoExtensions.some((ext) => url.toLowerCase().includes(ext));
+};
+
+// Media Component (renders either image or video)
+const MediaItem = ({ url, currentIndex, slideDirection }) => {
+  const videoRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const [isHovering, setIsHovering] = useState(false);
+
+  // Reset video state when currentIndex changes
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRef.current.pause();
+      videoRef.current.currentTime = 0;
+      setIsPlaying(false);
+    }
+  }, [currentIndex]);
+
+  const togglePlay = () => {
+    if (videoRef.current) {
+      if (isPlaying) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play();
+      }
+      setIsPlaying(!isPlaying);
+    }
+  };
+
+  const toggleMute = (e) => {
+    e.stopPropagation(); // Prevent triggering play/pause
+    if (videoRef.current) {
+      videoRef.current.muted = !isMuted;
+      setIsMuted(!isMuted);
+    }
+  };
+
+  if (isVideoUrl(url)) {
+    return (
+      <motion.div
+        initial={{
+          opacity: 0,
+          x: slideDirection === "right" ? 100 : -100,
+        }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{
+          opacity: 0,
+          x: slideDirection === "right" ? -100 : 100,
+        }}
+        transition={{ duration: 0.3 }}
+        className="relative w-full"
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
+      >
+        <video
+          ref={videoRef}
+          src={url}
+          className="w-full h-auto rounded-lg object-cover"
+          onClick={togglePlay}
+          muted={isMuted}
+          controls={false}
+          preload="metadata"
+          poster={`${url}#t=0.1`}
+        />
+
+        {/* Video Controls Overlay - Only shows hover controls, no darkening */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          {/* Center play button - only shown when not playing and hovering */}
+          {!isPlaying && isHovering && (
+            <button
+              onClick={togglePlay}
+              className="bg-black bg-opacity-50 text-white p-4 rounded-full hover:bg-opacity-70 transition-colors z-10"
+            >
+              <Play size={24} />
+            </button>
+          )}
+        </div>
+
+        {/* Bottom Controls - Only visible on hover */}
+        {isHovering && (
+          <div className="absolute bottom-2 right-2 flex space-x-2">
+            <button
+              onClick={toggleMute}
+              className="bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70 transition-colors z-10"
+            >
+              {isMuted ? <VolumeX size={18} /> : <Volume2 size={18} />}
+            </button>
+          </div>
+        )}
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.img
+      initial={{
+        opacity: 0,
+        x: slideDirection === "right" ? 100 : -100,
+      }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{
+        opacity: 0,
+        x: slideDirection === "right" ? -100 : 100,
+      }}
+      transition={{ duration: 0.3 }}
+      src={url}
+      alt={`Post media ${currentIndex + 1}`}
+      className="w-full h-auto object-cover rounded-lg"
+    />
+  );
+};
+
 // Individual Post Component
 const Post = ({ post, isDarkMode }) => {
   const [liked, setLiked] = useState(false);
@@ -206,12 +332,13 @@ const Post = ({ post, isDarkMode }) => {
 
   const accessToken = localStorage.getItem("accessToken");
 
+  // Format media URLs and check if they're videos or images
   const mediaUrls = Array.isArray(post.media_url)
     ? post.media_url
     : post.media_url
     ? [post.media_url]
     : [];
-  const hasMultipleImages = mediaUrls.length > 1;
+  const hasMultipleMedia = mediaUrls.length > 1;
 
   const postTheme = isDarkMode
     ? {
@@ -353,7 +480,9 @@ const Post = ({ post, isDarkMode }) => {
       >
         <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-4">
           <Globe className="w-8 h-8 mx-auto text-gray-400 mb-2" />
-          <p className="text-gray-600 dark:text-gray-300">Please log in to view posts</p>
+          <p className="text-gray-600 dark:text-gray-300">
+            Please log in to view posts
+          </p>
         </div>
       </motion.div>
     );
@@ -407,30 +536,19 @@ const Post = ({ post, isDarkMode }) => {
       <div className="px-4 pb-4">
         <p className={`${postTheme.text} text-lg mb-4`}>{post.content}</p>
 
-        {/* Media Content */}
+        {/* Media Content - Now supports both images and videos */}
         {mediaUrls.length > 0 && (
           <div className="relative rounded-xl overflow-hidden mb-4">
             <AnimatePresence mode="wait">
-              <motion.img
-                key={currentImageIndex}
-                initial={{
-                  opacity: 0,
-                  x: slideDirection === "right" ? 100 : -100,
-                }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{
-                  opacity: 0,
-                  x: slideDirection === "right" ? -100 : 100,
-                }}
-                transition={{ duration: 0.3 }}
-                src={mediaUrls[currentImageIndex]}
-                alt={`Post media ${currentImageIndex + 1}`}
-                className="w-full h-auto object-cover"
+              <MediaItem
+                url={mediaUrls[currentImageIndex]}
+                currentIndex={currentImageIndex}
+                slideDirection={slideDirection}
               />
             </AnimatePresence>
 
-            {/* Image Navigation */}
-            {hasMultipleImages && (
+            {/* Media Navigation */}
+            {hasMultipleMedia && (
               <>
                 <button
                   onClick={prevImage}
@@ -445,17 +563,22 @@ const Post = ({ post, isDarkMode }) => {
                   <ChevronRight size={20} />
                 </button>
                 <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex space-x-2">
-                  {mediaUrls.map((_, index) => (
-                    <button
-                      key={index}
-                      onClick={() => goToImage(index)}
-                      className={`w-2 h-2 rounded-full transition-colors ${
-                        index === currentImageIndex
-                          ? "bg-white"
-                          : "bg-white/50 hover:bg-white/75"
-                      }`}
-                    />
-                  ))}
+                  {mediaUrls.map((url, index) => {
+                    const isVideo = isVideoUrl(url);
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => goToImage(index)}
+                        className={`w-2 h-2 rounded-full transition-colors flex items-center justify-center ${
+                          index === currentImageIndex
+                            ? "bg-white"
+                            : "bg-white/50 hover:bg-white/75"
+                        }`}
+                      >
+                        {/* Optional: can add a tiny video indicator here */}
+                      </button>
+                    );
+                  })}
                 </div>
               </>
             )}
@@ -472,10 +595,7 @@ const Post = ({ post, isDarkMode }) => {
                 liked ? "text-red-500" : postTheme.icon
               }`}
             >
-              <Heart
-                size={20}
-                className={liked ? "fill-current" : ""}
-              />
+              <Heart size={20} className={liked ? "fill-current" : ""} />
               <span>{likeCount}</span>
             </motion.button>
             <motion.button
