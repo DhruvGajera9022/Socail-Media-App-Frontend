@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import Navbar from "../components/Navbar";
 import { useDarkMode } from "../context/DarkModeProvider";
+import axiosInstance from "../utils/axiosConfig";
 import {
   Edit,
   LogOut,
@@ -86,27 +87,22 @@ const Profile = () => {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/profile`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
+        const response = await axiosInstance.get('/profile');
+        const { success, data: profileData } = response.data;
 
-        const data = await response.json();
-
-        if (response.ok && data.status) {
-          setProfile(data.data);
+        if (success) {
+          setProfile(profileData);
           setEditForm({
-            firstName: data.data.firstName || "",
-            lastName: data.data.lastName || "",
-            username: data.data.username || "",
-            bio: data.data.bio || "",
-            location: data.data.location || "",
-            website: data.data.website || "",
-            isPrivate: data.data.is_private || false,
+            firstName: profileData.firstName || "",
+            lastName: profileData.lastName || "",
+            username: profileData.username || "",
+            bio: profileData.bio || "",
+            location: profileData.location || "",
+            website: profileData.website || "",
+            isPrivate: profileData.is_private || false,
           });
         } else {
-          setError(data.message || "Failed to load profile");
+          setError("Failed to load profile");
         }
       } catch (error) {
         console.error("Error fetching profile:", error);
@@ -1138,7 +1134,7 @@ const Profile = () => {
             <div className="p-6">
               {activeTab === "posts" && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {posts.map((post) => (
+                  {profile?.posts?.map((post) => (
                     <motion.div
                       key={post.id}
                       initial={{ opacity: 0, scale: 0.9 }}
@@ -1200,8 +1196,8 @@ const Profile = () => {
 
               {activeTab === "media" && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {posts
-                    .filter(
+                  {profile?.posts
+                    ?.filter(
                       (post) => post.media_url && post.media_url.length > 0
                     )
                     .map((post) => (
@@ -1231,3 +1227,4 @@ const Profile = () => {
 };
 
 export default Profile;
+
