@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import axios from "axios";
+import axiosInstance from "../utils/axiosConfig";
 import { useNavigate } from "react-router-dom";
 import { useDarkMode } from "../context/DarkModeProvider";
 
@@ -52,7 +52,7 @@ const Register = () => {
     setServerError("");
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/auth/register`, data);
+      const response = await axiosInstance.post('/auth/register', data);
       const resData = response.data;
 
       if (resData.status) {

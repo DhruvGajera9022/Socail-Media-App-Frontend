@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
-import axios from "axios";
+import axiosInstance from "../utils/axiosConfig";
 import { useNavigate } from "react-router-dom";
 import { useDarkMode } from "../context/DarkModeProvider";
 import { useLocation } from "react-router-dom";
@@ -49,11 +49,11 @@ const Login = () => {
     setErrorMessage("");
 
     try {
-      const response = await axios.post(`${API_BASE_URL}/auth/login`, data);
-      const resData = response.data;
+      const response = await axiosInstance.post('/auth/login', data);
+      const { success, data: resData } = response.data;
 
-      if (resData.status) {
-        const { accessToken, refreshToken, is_2fa, id } = resData.data;
+      if (success) {
+        const { accessToken, refreshToken, is_2fa, id } = resData;
 
         if (is_2fa) {
           // Redirect to 2FA verification, do not store tokens
@@ -65,10 +65,10 @@ const Login = () => {
           navigate("/");
         }
       } else {
-        setErrorMessage(resData.data || "Login failed!");
+        setErrorMessage("Login failed!");
       }
     } catch (error) {
-      setErrorMessage(error.response?.data?.data || "Something went wrong!");
+      setErrorMessage(error.response?.data?.message || "Something went wrong!");
     } finally {
       setLoading(false);
     }

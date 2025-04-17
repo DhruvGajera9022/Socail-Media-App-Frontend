@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Navbar from "../components/Navbar";
 import { useDarkMode } from "../context/DarkModeProvider";
+import axiosInstance from "../utils/axiosConfig";
 import {
   Search as SearchIcon,
   X,
@@ -71,20 +72,8 @@ const Search = () => {
     const accessToken = localStorage.getItem("accessToken");
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/profile/search/${searchQuery}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
-
-      if (!response.ok) throw new Error("Failed to fetch search results");
-
-      const data = await response.json();
+      const response = await axiosInstance.get(`/profile/search/${searchQuery}`);
+      const data = response.data;
       setSearchResults(data.data.users || []);
 
       // Add to recent searches if not already there
@@ -112,15 +101,8 @@ const Search = () => {
     }
 
     try {
-      const response = await fetch(endpoint, {
-        method,
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (!response.ok) throw new Error("Action failed");
+      const response = await axiosInstance.post(endpoint);
+      if (!response.data.status) throw new Error("Action failed");
 
       setSearchResults((prevResults) =>
         prevResults.map((u) =>

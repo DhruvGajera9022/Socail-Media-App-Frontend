@@ -1,5 +1,5 @@
 import React, { useState, useRef } from "react";
-import axios from "axios";
+import axiosInstance from "../utils/axiosConfig";
 import { useNavigate, useParams } from "react-router-dom";
 import { useDarkMode } from "../context/DarkModeProvider";
 
@@ -46,7 +46,7 @@ const TwoFA = () => {
     }
 
     try {
-      const response = await axios.post(
+      const response = await axiosInstance.post(
         `${API_BASE_URL}/profile/2fa/authenticate`,
         {
           id: id, // Send userId along with OTP

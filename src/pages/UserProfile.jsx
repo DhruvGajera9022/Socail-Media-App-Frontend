@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import axiosInstance from "../utils/axiosConfig";
 import Navbar from "../components/Navbar";
 import { useDarkMode } from "../context/DarkModeProvider";
 import {
@@ -27,13 +28,8 @@ const UserProfile = () => {
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/profile/${userId}`, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
-
-        const data = await response.json();
+        const response = await axiosInstance.get(`/profile/${userId}`);
+        const data = response.data;
 
         if (response.ok && data.status) {
           setProfile(data.data);
@@ -49,6 +45,7 @@ const UserProfile = () => {
     };
 
     if (accessToken) {
+      axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
       fetchUserProfile();
     } else {
       setLoading(false);
@@ -59,18 +56,11 @@ const UserProfile = () => {
   const handleFollowUser = async () => {
     try {
       const endpoint = profile.isFollowing
-        ? `${API_BASE_URL}/profile/${userId}/unfollow`
-        : `${API_BASE_URL}/profile/${userId}/follow`;
+        ? `/profile/${userId}/unfollow`
+        : `/profile/${userId}/follow`;
 
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-      });
-
-      const result = await response.json();
+      const response = await axiosInstance.post(endpoint);
+      const result = response.data;
 
       if (response.ok && result.status) {
         setProfile((prevProfile) => ({
